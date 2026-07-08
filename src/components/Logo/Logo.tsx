@@ -1,12 +1,77 @@
-import React from 'react'
+import type { ComponentPropsWithoutRef } from 'react'
+import clsx from 'clsx'
 
-export const Logo = () => {
+import styles from './Logo.module.scss'
+
+const logo = {
+  alt: 'StereoLuxury Logo',
+  height: 34,
+  src: '/images/stereo_logo.png',
+  width: 193,
+} as const
+
+type LogoVariant = 'default' | 'admin' | 'icon'
+
+export type LogoProps = Pick<
+  ComponentPropsWithoutRef<'img'>,
+  'alt' | 'aria-hidden' | 'className' | 'decoding' | 'loading' | 'title'
+> & {
+  priority?: 'auto' | 'high' | 'low'
+  variant?: LogoVariant
+}
+
+export const Logo = (props: LogoProps) => {
+  const {
+    alt = logo.alt,
+    className,
+    decoding = 'async',
+    loading = 'lazy',
+    priority = 'low',
+    title,
+    variant = 'default',
+  } = props
+
   return (
     /* eslint-disable @next/next/no-img-element */
     <img
-      alt="Payload Logo"
-      className="max-w-37.5 invert dark:invert-0"
-      src="https://raw.githubusercontent.com/payloadcms/payload/3.x/packages/payload/src/admin/assets/images/payload-logo-light.svg"
+      aria-hidden={props['aria-hidden']}
+      alt={alt}
+      className={clsx(styles.logo, styles[variant], className)}
+      decoding={decoding}
+      fetchPriority={priority}
+      height={logo.height}
+      loading={loading}
+      src={logo.src}
+      title={title}
+      width={logo.width}
     />
   )
 }
+
+export const AdminLogo = (props: LogoProps) => (
+  <Logo
+    alt={props.alt}
+    aria-hidden={props['aria-hidden']}
+    className={props.className}
+    decoding={props.decoding}
+    loading={props.loading || 'eager'}
+    priority={props.priority || 'high'}
+    title={props.title}
+    variant="admin"
+  />
+)
+
+export const AdminLogoIcon = (props: LogoProps) => (
+  <Logo
+    alt={props.alt}
+    aria-hidden={props['aria-hidden']}
+    className={props.className}
+    decoding={props.decoding}
+    loading={props.loading || 'eager'}
+    priority={props.priority || 'high'}
+    title={props.title}
+    variant="icon"
+  />
+)
+
+export default Logo
