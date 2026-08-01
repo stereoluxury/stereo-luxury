@@ -6,7 +6,7 @@ import styles from './Logo.module.scss'
 const logo = {
   alt: 'StereoLuxury Logo',
   height: 34,
-  src: '/images/stereo_logo.png',
+  src: '/images/stereo-logo-removebg.png',
   width: 193,
 } as const
 

@@ -228,3 +228,36 @@ input,
 button {
   @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-50 dark:focus-visible:ring-neutral-600 dark:focus-visible:ring-offset-neutral-900;
 }
+
+.site-shell {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+html[data-preloader='active'] .site-shell {
+  opacity: 0;
+  transform: translateY(0.75rem);
+}
+
+html[data-preloader='leaving'] .site-shell,
+html[data-preloader='done'] .site-shell {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-shell {
+    transition: none;
+    transform: none;
+  }
+
+  html[data-preloader='active'] .site-shell,
+  html[data-preloader='leaving'] .site-shell,
+  html[data-preloader='done'] .site-shell {
+    transform: none;
+  }
+}

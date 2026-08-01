@@ -22,14 +22,14 @@ export function HeaderClient({ header }: Props) {
   const pathname = usePathname()
 
   return (
-    <div className="relative z-20 border-b">
+    <div className="relative z-20">
       <nav className="flex items-center md:items-end justify-between container pt-2">
         <div className="block flex-none md:hidden">
           <Suspense fallback={null}>
             <MobileMenu menu={menu} />
           </Suspense>
         </div>
-        <div className="flex w-full items-end justify-between">
+        <div className="flex w-full items-center justify-between">
           <div className="flex w-full items-end gap-6 md:w-1/3">
             {menu.length ? (
               <ul className="hidden gap-4 text-sm md:flex md:items-center">
@@ -38,7 +38,7 @@ export function HeaderClient({ header }: Props) {
                     <CMSLink
                       {...item.link}
                       size={'clear'}
-                      className={cn('relative navLink', {
+                      className={cn('relative navLink text-base', {
                         active:
                           item.link.url && item.link.url !== '/'
                             ? pathname.includes(item.link.url)
@@ -54,7 +54,7 @@ export function HeaderClient({ header }: Props) {
 
           <div>
             <Link className="flex w-full items-center justify-center pt-4 pb-4 md:w-auto" href="/">
-              <Logo className="w-4 h-10" />
+              <Logo className="w-6" />
             </Link>
           </div>
 

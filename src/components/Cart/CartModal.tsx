@@ -22,7 +22,8 @@ import { DeleteItemButton } from './DeleteItemButton'
 import { EditItemQuantityButton } from './EditItemQuantityButton'
 import { OpenCartButton } from './OpenCart'
 
-export function CartModal() {
+export function 
+CartModal() {
   const { cart } = useCart()
   const [isOpen, setIsOpen] = useState(false)
 

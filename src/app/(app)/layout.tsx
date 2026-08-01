@@ -4,6 +4,7 @@ import { AdminBar } from '@/components/AdminBar'
 import { Footer } from '@/components/Footer'
 import { Header } from '@/components/Header'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
+import { Preloader } from '@/components/Preloader'
 import { ensureStartsWith } from '@/utilities/ensureStartsWith'
 import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
@@ -52,14 +53,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <link href="/favicon.ico" rel="shortcut icon" sizes="64x64" type="image/x-icon" />
       </head>
       <body>
-        <Providers>
-          <AdminBar />
-          <LivePreviewListener />
+        <Preloader />
+        <div className="site-shell flex min-h-screen flex-col">
+          <Providers>
+            <AdminBar />
+            <LivePreviewListener />
 
-          <Header />
-          <main>{children}</main>
-          <Footer />
-        </Providers>
+            <Header />
+            <main>{children}</main>
+            <Footer />
+          </Providers>
+        </div>
       </body>
     </html>
   )

@@ -1,4 +1,5 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
+import { resendAdapter } from '@payloadcms/email-resend'
 
 import {
   BoldFeature,
@@ -49,7 +50,7 @@ export default buildConfig({
         Icon: '@/components/Logo#AdminLogoIcon',
         Logo: '@/components/Logo#AdminLogo',
       },
-      
+
       // The `BeforeDashboard` component renders the 'welcome' block that you see after logging into your admin panel.
       // Feel free to delete this at any time. Simply remove the line below and the import `BeforeDashboard` statement on line 15.
       beforeDashboard: ['@/components/BeforeDashboard#BeforeDashboard'],
@@ -95,7 +96,11 @@ export default buildConfig({
       ]
     },
   }),
-  //email: nodemailerAdapter(),
+  email: resendAdapter({
+    defaultFromAddress: 'info@stereoluxury.ng',
+    defaultFromName: 'Stereo Luxury',
+    apiKey: process.env.RESEND_API_KEY || '',
+  }),
   endpoints: [],
   globals: [Header, Footer],
   plugins,

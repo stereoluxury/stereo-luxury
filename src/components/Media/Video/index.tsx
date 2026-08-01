@@ -22,7 +22,16 @@ export const Video: React.FC<MediaProps> = (props) => {
   }, [])
 
   if (resource && typeof resource === 'object') {
-    const { filename } = resource
+    const { filename, mimeType, url } = resource
+    const src =
+      url ||
+      (filename
+        ? `${process.env.NEXT_PUBLIC_SERVER_URL ? process.env.NEXT_PUBLIC_SERVER_URL : ''}/media/${filename}`
+        : undefined)
+
+    if (!src) {
+      return null
+    }
 
     return (
       <video
@@ -35,7 +44,7 @@ export const Video: React.FC<MediaProps> = (props) => {
         playsInline
         ref={videoRef}
       >
-        <source src={`${process.env.NEXT_PUBLIC_SERVER_URL}/media/${filename}`} />
+        <source src={src} type={mimeType || undefined} />
       </video>
     )
   }

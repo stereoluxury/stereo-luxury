@@ -42,9 +42,9 @@ export async function Footer() {
           >
             <FooterMenu menu={menu} />
           </Suspense>
-          <div className="md:ml-auto flex flex-col gap-4 items-end">
+          {/* <div className="md:ml-auto flex flex-col gap-4 items-end">
             <ThemeSelector />
-          </div>
+          </div> */}
         </div>
       </div>
       <div className="border-t border-neutral-200 py-6 text-sm dark:border-neutral-700">
