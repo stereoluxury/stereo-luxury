@@ -3,6 +3,7 @@ import { FilterList } from '@/components/layout/search/filter'
 import { sorting } from '@/lib/constants'
 import { Search } from '@/components/Search'
 import React, { Suspense } from 'react'
+import { Accordion, AccordionItem } from '@/components/ui/accordion'
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,8 +13,14 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
 
         <div className="flex flex-col md:flex-row items-start justify-between gap-16 md:gap-4">
           <div className="w-full flex-none flex flex-col gap-4 md:gap-8 basis-1/5">
-            <Categories />
-            <FilterList list={sorting} title="Sort by" />
+            <Accordion defaultValue="item-1" type="single" collapsible>
+              <AccordionItem value="item-1">
+                <Categories />
+              </AccordionItem>
+              <AccordionItem value="item-3">
+                <FilterList list={sorting} title="Sort by" />
+              </AccordionItem>
+            </Accordion>
           </div>
           <div className="min-h-screen w-full">{children}</div>
         </div>

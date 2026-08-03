@@ -5,6 +5,7 @@ import React, { Suspense } from 'react'
 
 import { FilterList } from './filter'
 import { CategoryItem } from './Categories.client'
+import { AccordionContent, AccordionTrigger } from '@/components/ui/accordion'
 
 async function CategoryList() {
   const payload = await getPayload({ config: configPromise })
@@ -16,17 +17,21 @@ async function CategoryList() {
 
   return (
     <div>
-      <h3 className="text-xs mb-2 text-neutral-500 dark:text-neutral-400">Category</h3>
+      <AccordionTrigger>
+        <h3 className="text-xs mb-2 text-neutral-500 dark:text-neutral-400">Categories</h3>
+      </AccordionTrigger>
 
-      <ul>
-        {categories.docs.map((category) => {
-          return (
-            <li key={category.id}>
-              <CategoryItem category={category} />
-            </li>
-          )
-        })}
-      </ul>
+      <AccordionContent>
+        <ul>
+          {categories.docs.map((category) => {
+            return (
+              <li key={category.id}>
+                <CategoryItem category={category} />
+              </li>
+            )
+          })}
+        </ul>
+      </AccordionContent>
     </div>
   )
 }
@@ -39,18 +44,20 @@ export function Categories() {
   return (
     <Suspense
       fallback={
-        <div className="col-span-2 hidden h-[400px] w-full flex-none py-4 lg:block">
-          <div className={clsx(skeleton, activeAndTitles)} />
-          <div className={clsx(skeleton, activeAndTitles)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-          <div className={clsx(skeleton, items)} />
-        </div>
+        <>
+          <AccordionTrigger>
+            <h3 className="text-xs mb-2 text-neutral-500 dark:text-neutral-400">Categories</h3>
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="col-span-2 hidden h-50 w-full flex-none py-4 lg:block">
+              <div className={clsx(skeleton, activeAndTitles)} />
+              <div className={clsx(skeleton, items)} />
+              <div className={clsx(skeleton, items)} />
+              <div className={clsx(skeleton, items)} />
+              <div className={clsx(skeleton, items)} />
+            </div>
+          </AccordionContent>
+        </>
       }
     >
       <CategoryList />
