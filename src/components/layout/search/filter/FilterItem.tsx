@@ -6,10 +6,32 @@ import { createUrl } from '@/utilities/createUrl'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { Check } from 'lucide-react'
 import React from 'react'
 
 import type { ListItem } from '.'
 import type { PathFilterItem as PathFilterItemType } from '.'
+
+function FilterCheckbox({ active }: { active: boolean }) {
+  return (
+    <span
+      className={clsx(
+        'flex h-4 w-4 flex-none items-center justify-center border transition-colors',
+        active
+          ? 'border-primary-foreground bg-primary-foreground'
+          : 'bg-transparent group-hover:border-primary-foreground/70',
+      )}
+    >
+      <Check
+        className={clsx(
+          'h-3 w-3 text-white transition-opacity',
+          active ? 'opacity-100' : 'opacity-0',
+        )}
+        strokeWidth={3}
+      />
+    </span>
+  )
+}
 
 function PathFilterItem({ item }: { item: PathFilterItemType }) {
   const pathname = usePathname()
@@ -23,15 +45,20 @@ function PathFilterItem({ item }: { item: PathFilterItemType }) {
   return (
     <li className="mt-2 flex text-black dark:text-white" key={item.title}>
       <DynamicTag
-        className={clsx(
-          'w-full text-sm underline-offset-4 hover:underline dark:hover:text-neutral-100',
-          {
-            'underline underline-offset-4': active,
-          },
-        )}
+        aria-checked={active}
+        role="checkbox"
+        className="group flex w-full items-center gap-2 text-sm dark:hover:text-neutral-100"
         href={createUrl(item.path, newParams)}
       >
-        {item.title}
+        <FilterCheckbox active={active} />
+        <span
+          className={clsx('transition-colors', {
+            'text-primary-foreground': active,
+            'group-hover:text-primary-foreground': !active,
+          })}
+        >
+          {item.title}
+        </span>
       </DynamicTag>
     </li>
   )
@@ -54,13 +81,21 @@ function SortFilterItem({ item }: { item: SortFilterItemType }) {
   return (
     <li className="mt-2 flex text-sm text-black dark:text-white" key={item.title}>
       <DynamicTag
-        className={clsx('w-full hover:underline hover:underline-offset-4', {
-          'underline underline-offset-4': active,
-        })}
+        aria-checked={active}
+        role="checkbox"
+        className="group flex w-full items-center gap-2"
         href={href}
         prefetch={!active ? false : undefined}
       >
-        {item.title}
+        <FilterCheckbox active={active} />
+        <span
+          className={clsx('transition-colors uppercase tracking-widest font-bold', {
+            'text-primary-foreground': active,
+            'group-hover:text-primary-foreground': !active,
+          })}
+        >
+          {item.title}
+        </span>
       </DynamicTag>
     </li>
   )

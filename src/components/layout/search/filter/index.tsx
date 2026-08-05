@@ -23,8 +23,10 @@ export function FilterList({ list, title }: { list: ListItem[]; title?: string }
     <React.Fragment>
       <nav>
         {title ? (
-          <AccordionTrigger className='data-[]:'>
-            <h3 className="text-xs mb-2 text-neutral-500 dark:text-neutral-400">{title}</h3>
+          <AccordionTrigger className="hover:no-underline">
+            <h3 className="text-lg tracking-wide mb-2 text-primary-foreground hover:text-primary-foreground/80 uppercase font-anton">
+              {title}
+            </h3>
           </AccordionTrigger>
         ) : null}
         <AccordionContent>

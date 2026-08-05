@@ -1,4 +1,5 @@
 import { Grid } from '@/components/Grid'
+import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
@@ -29,6 +30,9 @@ export default async function ShopPage({ searchParams }: Props) {
       gallery: true,
       categories: true,
       priceInUSD: true,
+      priceInNGN: true,
+      enableVariants: true,
+      variantTypes: true,
     },
     ...(sort ? { sort } : { sort: 'title' }),
     ...(searchValue || category
@@ -91,11 +95,21 @@ export default async function ShopPage({ searchParams }: Props) {
       )}
 
       {products?.docs.length > 0 ? (
-        <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.docs.map((product) => {
-            return <ProductGridItem key={product.id} product={product} />
-          })}
-        </Grid>
+        <>
+          <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.docs.map((product) => {
+              return <ProductGridItem key={product.id} product={product} />
+            })}
+          </Grid>
+
+          {products.totalPages > 1 && (
+            <Pagination
+              page={products.page ?? 1}
+              totalPages={products.totalPages}
+              useQueryParams={true}
+            />
+          )}
+        </>
       ) : null}
     </div>
   )

@@ -1,20 +1,22 @@
+import { ecommercePlugin } from '@payloadcms/plugin-ecommerce'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { seoPlugin } from '@payloadcms/plugin-seo'
-import { Plugin } from 'payload'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
-import { ecommercePlugin } from '@payloadcms/plugin-ecommerce'
+import { Plugin } from 'payload'
 
-import { stripeAdapter } from '@payloadcms/plugin-ecommerce/payments/stripe'
+import { PaymentAdapter } from '@payloadcms/plugin-ecommerce/types'
 
-import { Page, Product } from '@/payload-types'
-import { getServerSideURL } from '@/utilities/getURL'
-import { ProductsCollection } from '@/collections/Products'
-import { adminOrPublishedStatus } from '@/access/adminOrPublishedStatus'
 import { adminOnlyFieldAccess } from '@/access/adminOnlyFieldAccess'
+import { adminOrPublishedStatus } from '@/access/adminOrPublishedStatus'
 import { customerOnlyFieldAccess } from '@/access/customerOnlyFieldAccess'
 import { isAdmin } from '@/access/isAdmin'
 import { isDocumentOwner } from '@/access/isDocumentOwner'
+import { ProductsCollection } from '@/collections/Products'
+import { Page, Product } from '@/payload-types'
+import { getServerSideURL } from '@/utilities/getURL'
+import { normalizePaystackStatus } from '@/utilities/paystack'
+import { currenciesConfig } from '@/lib/constants'
 
 const generateTitle: GenerateTitle<Product | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | Payload Ecommerce Template` : 'Payload Ecommerce Template'
@@ -25,6 +27,283 @@ const generateURL: GenerateURL<Product | Page> = ({ doc }) => {
 
   return doc?.slug ? `${url}/${doc.slug}` : url
 }
+
+const paystackAdapter = (): PaymentAdapter => ({
+  name: 'paystack',
+  label: 'Paystack',
+  group: {
+    name: 'paystack',
+    type: 'group',
+    admin: {
+      condition: (data) => data?.paymentMethod === 'paystack',
+    },
+    fields: [
+      {
+        name: 'reference',
+        type: 'text',
+        label: 'Paystack Reference',
+      },
+      {
+        name: 'status',
+        type: 'text',
+        label: 'Paystack Status',
+      },
+    ],
+  },
+  async initiatePayment({ data, req, transactionsSlug }) {
+    const payload = req.payload
+    const { cart, customerEmail, billingAddress, shippingAddress } = data
+    const secretKey = process.env.PAYSTACK_SECRET_KEY
+    const transactionsCollection = (transactionsSlug || 'transactions') as 'transactions'
+    const resolvedCustomerEmail = (customerEmail ||
+      (data as { email?: string }).email ||
+      req.user?.email ||
+      '') as string
+
+    if (!secretKey) {
+      throw new Error('Paystack secret key is required')
+    }
+
+    if (!cart || !cart.items?.length) {
+      throw new Error('Cart is empty or not provided')
+    }
+
+    if (!resolvedCustomerEmail) {
+      throw new Error('A valid customer email is required to make a purchase')
+    }
+
+    const flattenedCart = cart.items.map((item) => {
+      const productID = typeof item.product === 'object' ? item.product.id : item.product
+      const variantID = item.variant
+        ? typeof item.variant === 'object'
+          ? item.variant.id
+          : item.variant
+        : undefined
+      const { product: _product, variant: _variant, ...customProperties } = item
+
+      return {
+        ...customProperties,
+        product: productID,
+        quantity: item.quantity,
+        ...(variantID ? { variant: variantID } : {}),
+      }
+    })
+
+    const amount = Math.round((cart.subtotal || 0) * 100)
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount,
+        email: resolvedCustomerEmail,
+        callback_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/checkout/confirm-order?email=${encodeURIComponent(resolvedCustomerEmail)}`,
+        metadata: {
+          cartID: cart.id,
+          cartItemsSnapshot: JSON.stringify(flattenedCart),
+          shippingAddress: JSON.stringify(shippingAddress || null),
+          billingAddress: JSON.stringify(billingAddress || null),
+        },
+      }),
+    })
+
+    const json = await response.json()
+
+    if (!response.ok || !json.status) {
+      throw new Error(json.message || 'Unable to initialize Paystack payment')
+    }
+
+    const transaction = await payload.create({
+      collection: transactionsCollection,
+      data: {
+        ...(req.user ? { customer: req.user.id } : { customerEmail: resolvedCustomerEmail }),
+        amount,
+        billingAddress,
+        cart: cart.id,
+        currency: data.currency?.toUpperCase() || 'USD',
+        items: flattenedCart,
+        paymentMethod: 'paystack',
+        status: 'pending',
+        paystack: {
+          reference: json.data.reference,
+          status: 'pending',
+        },
+      } as any,
+      req,
+    })
+
+    return {
+      message: 'Payment initiated successfully',
+      authorizationUrl: json.data.authorization_url,
+      reference: json.data.reference,
+      transactionID: transaction.id,
+    }
+  },
+  async confirmOrder({ data, req, transactionsSlug }) {
+    const payload = req.payload
+    const paymentReference = data.paymentReference || data.reference
+    const { cartsSlug = 'carts', ordersSlug = 'orders' } =
+      (req?.payload?.config as { cartsSlug?: string; ordersSlug?: string } | undefined) || {}
+    const secretKey = process.env.PAYSTACK_SECRET_KEY
+    const resolvedCustomerEmail = (data.customerEmail ||
+      data.email ||
+      req.user?.email ||
+      '') as string
+    const transactionsCollection = (transactionsSlug || 'transactions') as 'transactions'
+    const ordersCollection = (ordersSlug || 'orders') as 'orders'
+    const cartsCollection = (cartsSlug || 'carts') as 'carts'
+
+    if (!secretKey) {
+      throw new Error('Paystack secret key is required')
+    }
+
+    if (!paymentReference) {
+      throw new Error('Paystack reference is required')
+    }
+
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${paymentReference}`, {
+      headers: {
+        Authorization: `Bearer ${secretKey}`,
+      },
+    })
+
+    const json = await response.json()
+
+    if (!response.ok || !json.status) {
+      throw new Error(json.message || 'Unable to verify Paystack payment')
+    }
+
+    const status = json.data.status
+    const normalizedStatus = normalizePaystackStatus(status)
+
+    const transactionsResults = await payload.find({
+      collection: transactionsCollection,
+      req,
+      where: {
+        'paystack.reference': {
+          equals: paymentReference,
+        },
+      },
+    })
+
+    const transaction = transactionsResults.docs[0] as any
+
+    if (!transactionsResults.totalDocs || !transaction) {
+      throw new Error('No transaction found for the provided Paystack reference')
+    }
+
+    const cartID = transaction.cart?.id || transaction.cart
+    const cartItemsSnapshot = transaction.items || []
+    const shippingAddress = transaction.billingAddress || null
+
+    if (!cartID) {
+      throw new Error('Cart ID not found in the transaction metadata')
+    }
+
+    const order = await payload.create({
+      collection: ordersCollection,
+      data: {
+        amount: transaction.amount,
+        currency: transaction.currency,
+        ...(req.user
+          ? { customer: req.user.id }
+          : { customerEmail: resolvedCustomerEmail || transaction.customerEmail }),
+        items: cartItemsSnapshot,
+        shippingAddress,
+        status: normalizedStatus === 'succeeded' ? 'processing' : 'pending',
+        transactions: [transaction.id],
+      } as any,
+      req,
+    })
+
+    await payload.update({
+      id: cartID,
+      collection: cartsCollection,
+      data: {
+        purchasedAt: new Date().toISOString(),
+      } as any,
+      req,
+    })
+
+    await payload.update({
+      id: transaction.id,
+      collection: transactionsCollection,
+      data: {
+        order: order.id,
+        status: normalizedStatus,
+        paystack: {
+          ...(transaction.paystack || {}),
+          status: normalizedStatus,
+        },
+      } as any,
+      req,
+    })
+
+    return {
+      message: 'Order confirmed successfully',
+      orderID: order.id,
+      transactionID: transaction.id,
+      ...(order.accessToken ? { accessToken: order.accessToken } : {}),
+    }
+  },
+  endpoints: [
+    {
+      method: 'post',
+      path: '/webhooks',
+      handler: async (req) => {
+        const body = req.json ? await req.json() : undefined
+        const event = body?.event
+        const reference = body?.data?.reference
+
+        if (!reference || !event) {
+          return Response.json(
+            { success: false, message: 'Missing Paystack webhook payload' },
+            { status: 400 },
+          )
+        }
+
+        const payload = req.payload
+        const transactionsResults = await payload.find({
+          collection: 'transactions',
+          req,
+          where: {
+            'paystack.reference': {
+              equals: reference,
+            },
+          },
+        })
+
+        const transaction = transactionsResults.docs[0] as any
+
+        if (transaction) {
+          const normalizedStatus =
+            event === 'charge.success'
+              ? 'succeeded'
+              : event === 'charge.failed'
+                ? 'failed'
+                : 'pending'
+
+          await payload.update({
+            id: transaction.id,
+            collection: 'transactions',
+            data: {
+              status: normalizedStatus,
+              paystack: {
+                ...(transaction.paystack || {}),
+                status: normalizedStatus,
+              },
+            } as any,
+            req,
+          })
+        }
+
+        return Response.json({ success: true })
+      },
+    },
+  ],
+})
 
 export const plugins: Plugin[] = [
   seoPlugin({
@@ -115,14 +394,9 @@ export const plugins: Plugin[] = [
         ],
       }),
     },
+    currencies: currenciesConfig,
     payments: {
-      paymentMethods: [
-        stripeAdapter({
-          secretKey: process.env.STRIPE_SECRET_KEY!,
-          publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
-          webhookSecret: process.env.STRIPE_WEBHOOKS_SIGNING_SECRET!,
-        }),
-      ],
+      paymentMethods: [paystackAdapter()],
     },
     products: {
       productsCollectionOverride: ProductsCollection,

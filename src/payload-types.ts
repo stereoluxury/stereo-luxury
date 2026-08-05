@@ -254,7 +254,7 @@ export interface Order {
   transactions?: (string | Transaction)[] | null;
   status?: OrderStatus;
   amount?: number | null;
-  currency?: 'USD' | null;
+  currency?: ('NGN' | 'USD') | null;
   accessToken?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -297,6 +297,8 @@ export interface Product {
     hasNextPage?: boolean;
     totalDocs?: number;
   };
+  priceInNGNEnabled?: boolean | null;
+  priceInNGN?: number | null;
   priceInUSDEnabled?: boolean | null;
   priceInUSD?: number | null;
   relatedProducts?: (string | Product)[] | null;
@@ -308,7 +310,7 @@ export interface Product {
     image?: (string | null) | Media;
     description?: string | null;
   };
-  categories?: (string | Category)[] | null;
+  categories: (string | Category)[];
   /**
    * When enabled, the slug will auto-generate from the title field on save and autosave.
    */
@@ -905,6 +907,8 @@ export interface Variant {
   product: string | Product;
   options: (string | VariantOption)[];
   inventory?: number | null;
+  priceInNGNEnabled?: boolean | null;
+  priceInNGN?: number | null;
   priceInUSDEnabled?: boolean | null;
   priceInUSD?: number | null;
   updatedAt: string;
@@ -926,10 +930,10 @@ export interface Transaction {
         id?: string | null;
       }[]
     | null;
-  paymentMethod?: 'stripe' | null;
-  stripe?: {
-    customerID?: string | null;
-    paymentIntentID?: string | null;
+  paymentMethod?: 'paystack' | null;
+  paystack?: {
+    reference?: string | null;
+    status?: string | null;
   };
   billingAddress?: {
     title?: string | null;
@@ -950,7 +954,7 @@ export interface Transaction {
   order?: (string | null) | Order;
   cart?: (string | null) | Cart;
   amount?: number | null;
-  currency?: 'USD' | null;
+  currency?: ('NGN' | 'USD') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -973,7 +977,7 @@ export interface Cart {
   purchasedAt?: string | null;
   status?: ('active' | 'purchased' | 'abandoned') | null;
   subtotal?: number | null;
-  currency?: 'USD' | null;
+  currency?: ('NGN' | 'USD') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1601,6 +1605,8 @@ export interface VariantsSelect<T extends boolean = true> {
   product?: T;
   options?: T;
   inventory?: T;
+  priceInNGNEnabled?: T;
+  priceInNGN?: T;
   priceInUSDEnabled?: T;
   priceInUSD?: T;
   updatedAt?: T;
@@ -1658,6 +1664,8 @@ export interface ProductsSelect<T extends boolean = true> {
   enableVariants?: T;
   variantTypes?: T;
   variants?: T;
+  priceInNGNEnabled?: T;
+  priceInNGN?: T;
   priceInUSDEnabled?: T;
   priceInUSD?: T;
   relatedProducts?: T;
@@ -1750,11 +1758,11 @@ export interface TransactionsSelect<T extends boolean = true> {
         id?: T;
       };
   paymentMethod?: T;
-  stripe?:
+  paystack?:
     | T
     | {
-        customerID?: T;
-        paymentIntentID?: T;
+        reference?: T;
+        status?: T;
       };
   billingAddress?:
     | T

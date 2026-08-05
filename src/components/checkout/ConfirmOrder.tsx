@@ -1,6 +1,7 @@
 'use client'
 
 import { LoadingSpinner } from '@/components/LoadingSpinner'
+import { useAuth } from '@/providers/Auth'
 import { useCart, usePayments } from '@payloadcms/plugin-ecommerce/client/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef } from 'react'
@@ -8,6 +9,7 @@ import { useEffect, useRef } from 'react'
 export const ConfirmOrder: React.FC = () => {
   const { confirmOrder } = usePayments()
   const { cart } = useCart()
+  const { user } = useAuth()
 
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -19,16 +21,17 @@ export const ConfirmOrder: React.FC = () => {
       return
     }
 
-    const paymentIntentID = searchParams.get('payment_intent')
-    const email = searchParams.get('email')
+    const paymentReference = searchParams.get('reference')
+    const email = searchParams.get('email') || user?.email || undefined
 
-    if (paymentIntentID) {
+    if (paymentReference) {
       if (!isConfirming.current) {
         isConfirming.current = true
 
-        confirmOrder('stripe', {
+        confirmOrder('paystack', {
           additionalData: {
-            paymentIntentID,
+            ...(email ? { customerEmail: email } : {}),
+            paymentReference,
           },
         }).then((result) => {
           if (result && typeof result === 'object' && 'orderID' in result && result.orderID) {
@@ -51,7 +54,7 @@ export const ConfirmOrder: React.FC = () => {
       // If no payment intent ID is found, redirect to the home
       router.push('/')
     }
-  }, [cart, confirmOrder, router, searchParams])
+  }, [cart, confirmOrder, router, searchParams, user?.email])
 
   return (
     <div className="text-center w-full flex flex-col items-center justify-start gap-4">

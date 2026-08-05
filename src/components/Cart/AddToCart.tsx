@@ -3,19 +3,17 @@
 import { Button } from '@/components/ui/button'
 import type { Product, Variant } from '@/payload-types'
 
-import { useCart } from '@payloadcms/plugin-ecommerce/client/react'
+import { useAddToCart } from '@/hooks/useAddToCart'
 import clsx from 'clsx'
 import { useSearchParams } from 'next/navigation'
-import React, { useCallback, useMemo } from 'react'
-import { toast } from 'sonner'
+import React, { useMemo } from 'react'
+
 type Props = {
   product: Product
 }
 
 export function AddToCart({ product }: Props) {
-  const { addItem, cart, isLoading } = useCart()
   const searchParams = useSearchParams()
-
   const variants = product.variants?.docs || []
 
   const selectedVariant = useMemo<Variant | undefined>(() => {
@@ -37,75 +35,27 @@ export function AddToCart({ product }: Props) {
     return undefined
   }, [product.enableVariants, searchParams, variants])
 
-  const addToCart = useCallback(
-    (e: React.FormEvent<HTMLButtonElement>) => {
-      e.preventDefault()
-
-      addItem({
-        product: product.id,
-        variant: selectedVariant?.id ?? undefined,
-      }).then(() => {
-        toast.success('Item added to cart.')
-      })
-    },
-    [addItem, product, selectedVariant],
-  )
-
-  const disabled = useMemo<boolean>(() => {
-    const existingItem = cart?.items?.find((item) => {
-      const productID = typeof item.product === 'object' ? item.product?.id : item.product
-      const variantID = item.variant
-        ? typeof item.variant === 'object'
-          ? item.variant?.id
-          : item.variant
-        : undefined
-
-      if (productID === product.id) {
-        if (product.enableVariants) {
-          return variantID === selectedVariant?.id
-        }
-        return true
-      }
-    })
-
-    if (existingItem) {
-      const existingQuantity = existingItem.quantity
-
-      if (product.enableVariants) {
-        return existingQuantity >= (selectedVariant?.inventory || 0)
-      }
-      return existingQuantity >= (product.inventory || 0)
-    }
-
-    if (product.enableVariants) {
-      if (!selectedVariant) {
-        return true
-      }
-
-      if (selectedVariant.inventory === 0) {
-        return true
-      }
-    } else {
-      if (product.inventory === 0) {
-        return true
-      }
-    }
-
-    return false
-  }, [selectedVariant, cart?.items, product])
+  const { addToCart, disabled, isLoading } = useAddToCart({
+    product,
+    variant: selectedVariant,
+  })
 
   return (
     <Button
       aria-label="Add to cart"
       variant={'outline'}
-      className={clsx({
-        'hover:opacity-90': true,
-      })}
+      className={clsx(
+        'group relative isolate w-full max-w-80 overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black',
+      )}
       disabled={disabled || isLoading}
       onClick={addToCart}
       type="submit"
     >
-      Add To Cart
+      <span
+        aria-hidden
+        className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+      />
+      <span className="relative">Add To Cart</span>
     </Button>
   )
 }

@@ -17,15 +17,17 @@ async function CategoryList() {
 
   return (
     <div>
-      <AccordionTrigger>
-        <h3 className="text-xs mb-2 text-neutral-500 dark:text-neutral-400">Categories</h3>
+      <AccordionTrigger className="hover:no-underline">
+        <h3 className="text-lg tracking-wide mb-2 text-primary-foreground hover:text-primary-foreground/80 uppercase font-anton">
+          Categories
+        </h3>
       </AccordionTrigger>
 
       <AccordionContent>
         <ul>
           {categories.docs.map((category) => {
             return (
-              <li key={category.id}>
+              <li key={category.id} className="font-archivo">
                 <CategoryItem category={category} />
               </li>
             )

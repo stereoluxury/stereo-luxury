@@ -5,12 +5,11 @@ import { Footer } from '@/components/Footer'
 import { Header } from '@/components/Header'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
 import { Preloader } from '@/components/Preloader'
-import { ensureStartsWith } from '@/utilities/ensureStartsWith'
 import { Providers } from '@/providers'
 import { InitTheme } from '@/providers/Theme/InitTheme'
-import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
-import React from 'react'
+import { GeistSans } from 'geist/font/sans'
+import { Anton, Archivo_Narrow } from 'next/font/google'
 import './globals.css'
 
 /* const { SITE_NAME, TWITTER_CREATOR, TWITTER_SITE } = process.env
@@ -40,10 +39,19 @@ const twitterSite = TWITTER_SITE ? ensureStartsWith(TWITTER_SITE, 'https://') : 
     }),
 } */
 
+const anton = Anton({ weight: ['400'], subsets: ['latin'], variable: '--font-anton' })
+const archivo = Archivo_Narrow({
+  weight: ['400', '700'],
+  subsets: ['latin'],
+  variable: '--font-archivo',
+})
+
 export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
-      className={[GeistSans.variable, GeistMono.variable].filter(Boolean).join(' ')}
+      className={[GeistSans.variable, GeistMono.variable, anton.variable, archivo.variable]
+        .filter(Boolean)
+        .join(' ')}
       lang="en"
       suppressHydrationWarning
     >
@@ -52,7 +60,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <link href="/favicon.png" rel="icon" sizes="64x64" type="image/png" />
         <link href="/favicon.ico" rel="shortcut icon" sizes="64x64" type="image/x-icon" />
       </head>
-      <body>
+      <body className="font-archivo">
         <Preloader />
         <div className="site-shell flex min-h-screen flex-col">
           <Providers>

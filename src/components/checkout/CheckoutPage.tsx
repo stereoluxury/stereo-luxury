@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/providers/Auth'
 import { useTheme } from '@/providers/Theme'
-import { Elements } from '@stripe/react-stripe-js'
-import { loadStripe } from '@stripe/stripe-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { Suspense, useCallback, useEffect, useState } from 'react'
@@ -17,17 +15,12 @@ import React, { Suspense, useCallback, useEffect, useState } from 'react'
 import { AddressItem } from '@/components/addresses/AddressItem'
 import { CreateAddressModal } from '@/components/addresses/CreateAddressModal'
 import { CheckoutAddresses } from '@/components/checkout/CheckoutAddresses'
-import { CheckoutForm } from '@/components/forms/CheckoutForm'
 import { FormItem } from '@/components/forms/FormItem'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
 import { Checkbox } from '@/components/ui/checkbox'
-import { cssVariables } from '@/cssVariables'
 import { Address } from '@/payload-types'
 import { useAddresses, useCart, usePayments } from '@payloadcms/plugin-ecommerce/client/react'
 import { toast } from 'sonner'
-
-const apiKey = `${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}`
-const stripe = loadStripe(apiKey)
 
 export const CheckoutPage: React.FC = () => {
   const { user } = useAuth()
@@ -42,6 +35,7 @@ export const CheckoutPage: React.FC = () => {
   const [emailEditable, setEmailEditable] = useState(true)
   const [paymentData, setPaymentData] = useState<null | Record<string, unknown>>(null)
   const { initiatePayment } = usePayments()
+  const [isRedirectingToPaystack, setIsRedirectingToPaystack] = useState(false)
   const { addresses } = useAddresses()
   const [shippingAddress, setShippingAddress] = useState<Partial<Address>>()
   const [billingAddress, setBillingAddress] = useState<Partial<Address>>()
@@ -104,8 +98,6 @@ export const CheckoutPage: React.FC = () => {
     },
     [billingAddress, billingAddressSameAsShipping, shippingAddress],
   )
-
-  if (!stripe) return null
 
   if (cartIsEmpty && isProcessingPayment) {
     return (
@@ -272,13 +264,13 @@ export const CheckoutPage: React.FC = () => {
         {!paymentData && (
           <Button
             className="self-start"
-            disabled={!canGoToPayment}
+            disabled={!canGoToPayment || isRedirectingToPaystack}
             onClick={(e) => {
               e.preventDefault()
-              void initiatePaymentIntent('stripe')
+              void initiatePaymentIntent('paystack')
             }}
           >
-            Go to payment
+            {isRedirectingToPaystack ? 'Preparing payment…' : 'Go to payment'}
           </Button>
         )}
 
@@ -300,52 +292,27 @@ export const CheckoutPage: React.FC = () => {
 
         <Suspense fallback={<React.Fragment />}>
           {/* @ts-ignore */}
-          {paymentData && paymentData?.['clientSecret'] && (
+          {paymentData && paymentData?.['authorizationUrl'] && (
             <div className="pb-16">
               <h2 className="font-medium text-3xl">Payment</h2>
               {error && <p>{`Error: ${error}`}</p>}
-              <Elements
-                options={{
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      borderRadius: '6px',
-                      colorPrimary: '#858585',
-                      gridColumnSpacing: '20px',
-                      gridRowSpacing: '20px',
-                      colorBackground: theme === 'dark' ? '#0a0a0a' : cssVariables.colors.base0,
-                      colorDanger: cssVariables.colors.error500,
-                      colorDangerText: cssVariables.colors.error500,
-                      colorIcon:
-                        theme === 'dark' ? cssVariables.colors.base0 : cssVariables.colors.base1000,
-                      colorText: theme === 'dark' ? '#858585' : cssVariables.colors.base1000,
-                      colorTextPlaceholder: '#858585',
-                      fontFamily: 'Geist, sans-serif',
-                      fontSizeBase: '16px',
-                      fontWeightBold: '600',
-                      fontWeightNormal: '500',
-                      spacingUnit: '4px',
-                    },
-                  },
-                  clientSecret: paymentData['clientSecret'] as string,
-                }}
-                stripe={stripe}
-              >
-                <div className="flex flex-col gap-8">
-                  <CheckoutForm
-                    customerEmail={email}
-                    billingAddress={billingAddress}
-                    setProcessingPayment={setProcessingPayment}
-                  />
-                  <Button
-                    variant="ghost"
-                    className="self-start"
-                    onClick={() => setPaymentData(null)}
-                  >
-                    Cancel payment
-                  </Button>
-                </div>
-              </Elements>
+              <div className="flex flex-col gap-8">
+                <p className="text-sm text-primary/70">
+                  You’ll be redirected to Paystack to complete your payment securely.
+                </p>
+                <Button
+                  onClick={() => {
+                    const authorizationUrl = paymentData['authorizationUrl'] as string
+                    window.open(authorizationUrl, '_blank', 'noopener,noreferrer')
+                  }}
+                  variant="default"
+                >
+                  Continue to Paystack
+                </Button>
+                <Button variant="ghost" className="self-start" onClick={() => setPaymentData(null)}>
+                  Cancel payment
+                </Button>
+              </div>
             </div>
           )}
         </Suspense>
@@ -410,7 +377,7 @@ export const CheckoutPage: React.FC = () => {
                     <div className="flex flex-col gap-1">
                       <p className="font-medium text-lg">{title}</p>
                       {variant && typeof variant === 'object' && (
-                        <p className="text-sm font-mono text-primary/50 tracking-widest">
+                        <p className="text-sm font-archivo text-primary/50 tracking-widest">
                           {variant.options
                             ?.map(
                               (
