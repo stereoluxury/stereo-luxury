@@ -120,36 +120,45 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-stretch justify-stretch my-8 md:flex-row grow gap-10 md:gap-6 lg:gap-8">
+    <div className="flex flex-col items-stretch justify-stretch my-8 md:flex-row grow gap-10 md:gap-6 lg:gap-8 uppercase">
       <div className="basis-full lg:basis-2/3 flex flex-col gap-8 justify-stretch">
-        <h2 className="font-medium text-3xl">Contact</h2>
+        <h2 className="font-medium text-3xl font-anton">Contact</h2>
         {!user && (
-          <div className=" bg-accent dark:bg-black rounded-lg p-4 w-full flex items-center">
+          <div className=" bg-accent dark:bg-black p-4 w-full flex items-center">
             <div className="prose dark:prose-invert">
-              <Button asChild className="no-underline text-inherit" variant="outline">
+              <Button
+                asChild
+                className="no-underline text-inherit rounded-none transition-all duration-300"
+                variant="outline"
+              >
                 <Link href="/login">Log in</Link>
               </Button>
-              <p className="mt-0">
+              <p className="mt-3">
                 <span className="mx-2">or</span>
-                <Link href="/create-account">create an account</Link>
+                <Link
+                  className="hover:text-primary-foreground transition-all duration-300"
+                  href="/create-account"
+                >
+                  create an account
+                </Link>
               </p>
             </div>
           </div>
         )}
         {user ? (
-          <div className="bg-accent dark:bg-card rounded-lg p-4 ">
+          <div className="bg-accent dark:bg-card tracking-widest p-4 ">
             <div>
               <p>{user.email}</p>{' '}
               <p>
                 Not you?{' '}
-                <Link className="underline" href="/logout">
+                <Link className="underline hover:text-primary-foreground" href="/logout">
                   Log out
                 </Link>
               </p>
             </div>
           </div>
         ) : (
-          <div className="bg-accent dark:bg-black rounded-lg p-4 ">
+          <div className="bg-accent dark:bg-black tracking-widest p-4 ">
             <div>
               <p className="mb-4">Enter your email to checkout as a guest.</p>
 
@@ -159,6 +168,7 @@ export const CheckoutPage: React.FC = () => {
                   disabled={!emailEditable}
                   id="email"
                   name="email"
+                  className="rounded-none"
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   type="email"
@@ -171,15 +181,20 @@ export const CheckoutPage: React.FC = () => {
                   e.preventDefault()
                   setEmailEditable(false)
                 }}
+                className="group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
                 variant="default"
               >
+                <span
+                  aria-hidden
+                  className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+                />
                 Continue as guest
               </Button>
             </div>
           </div>
         )}
 
-        <h2 className="font-medium text-3xl">Address</h2>
+        <h2 className="font-medium text-3xl font-anton">Address</h2>
 
         {billingAddress ? (
           <div>
@@ -188,6 +203,7 @@ export const CheckoutPage: React.FC = () => {
                 <Button
                   variant={'outline'}
                   disabled={Boolean(paymentData)}
+                  className="rounded-none"
                   onClick={(e) => {
                     e.preventDefault()
                     setBillingAddress(undefined)
@@ -211,16 +227,19 @@ export const CheckoutPage: React.FC = () => {
           />
         )}
 
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-center group">
           <Checkbox
             id="shippingTheSameAsBilling"
             checked={billingAddressSameAsShipping}
+            className="rounded-none group-hover:cursor-pointer"
             disabled={Boolean(paymentData || (!user && (!email || Boolean(emailEditable))))}
             onCheckedChange={(state) => {
               setBillingAddressSameAsShipping(state as boolean)
             }}
           />
-          <Label htmlFor="shippingTheSameAsBilling">Shipping is the same as billing</Label>
+          <Label className="group-hover:cursor-pointer" htmlFor="shippingTheSameAsBilling">
+            Shipping is the same as billing
+          </Label>
         </div>
 
         {!billingAddressSameAsShipping && (
@@ -263,13 +282,17 @@ export const CheckoutPage: React.FC = () => {
 
         {!paymentData && (
           <Button
-            className="self-start"
             disabled={!canGoToPayment || isRedirectingToPaystack}
             onClick={(e) => {
               e.preventDefault()
               void initiatePaymentIntent('paystack')
             }}
+            className="self-start group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
           >
+            <span
+              aria-hidden
+              className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+            />
             {isRedirectingToPaystack ? 'Preparing payment…' : 'Go to payment'}
           </Button>
         )}
@@ -319,8 +342,8 @@ export const CheckoutPage: React.FC = () => {
       </div>
 
       {!cartIsEmpty && (
-        <div className="basis-full lg:basis-1/3 lg:pl-8 p-8 border-none bg-primary/5 flex flex-col gap-8 rounded-lg">
-          <h2 className="text-3xl font-medium">Your cart</h2>
+        <div className="basis-full lg:basis-1/3 lg:pl-8 p-8 border-none bg-primary/5 flex flex-col gap-8">
+          <h2 className="text-3xl font-medium font-anton">Your cart</h2>
           {cart?.items?.map((item, index) => {
             if (typeof item.product === 'object' && item.product) {
               const {
@@ -365,11 +388,11 @@ export const CheckoutPage: React.FC = () => {
               }
 
               return (
-                <div className="flex items-start gap-4" key={index}>
-                  <div className="flex items-stretch justify-stretch h-20 w-20 p-2 rounded-lg border">
+                <div className="flex items-start gap-4 tracking-widest" key={index}>
+                  <div className="flex items-stretch justify-stretch h-20 w-20 p-2 border">
                     <div className="relative w-full h-full">
                       {image && typeof image !== 'string' && (
-                        <Media className="" fill imgClassName="rounded-lg" resource={image} />
+                        <Media className="" fill imgClassName="rounded-none" resource={image} />
                       )}
                     </div>
                   </div>
@@ -403,10 +426,12 @@ export const CheckoutPage: React.FC = () => {
             }
             return null
           })}
-          <hr />
-          <div className="flex justify-between items-center gap-2">
-            <span className="uppercase">Total</span>{' '}
-            <Price className="text-3xl font-medium" amount={cart.subtotal || 0} />
+          <div className="flex flex-col gap-8 tracking-widest mt-auto">
+            <hr />
+            <div className="flex justify-between items-center gap-2">
+              <span className="uppercase">Total</span>{' '}
+              <Price className="text-3xl font-medium" amount={cart.subtotal || 0} />
+            </div>
           </div>
         </div>
       )}

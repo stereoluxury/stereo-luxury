@@ -22,8 +22,7 @@ import { DeleteItemButton } from './DeleteItemButton'
 import { EditItemQuantityButton } from './EditItemQuantityButton'
 import { OpenCartButton } from './OpenCart'
 
-export function 
-CartModal() {
+export function CartModal() {
   const { cart } = useCart()
   const [isOpen, setIsOpen] = useState(false)
 
@@ -39,6 +38,9 @@ CartModal() {
     return cart.items.reduce((quantity, item) => (item.quantity || 0) + quantity, 0)
   }, [cart])
 
+  console.log(cart);
+  
+
   return (
     <Sheet onOpenChange={setIsOpen} open={isOpen}>
       <SheetTrigger asChild>
@@ -47,9 +49,13 @@ CartModal() {
 
       <SheetContent className="flex flex-col">
         <SheetHeader>
-          <SheetTitle>My Cart</SheetTitle>
+          <SheetTitle className="font-anton md:text-3xl uppercase text-primary-foreground">
+            My Cart
+          </SheetTitle>
 
-          <SheetDescription>Manage your cart here, add items to view the total.</SheetDescription>
+          <SheetDescription className="tracking-widest text uppercase">
+            Manage your cart here, add items to view the total.
+          </SheetDescription>
         </SheetHeader>
 
         {!cart || cart?.items?.length === 0 ? (
@@ -79,12 +85,12 @@ CartModal() {
                       : undefined
 
                   let image = firstGalleryImage || metaImage
-                  let price = product.priceInUSD
+                  let price = product.priceInNGN
 
                   const isVariant = Boolean(variant) && typeof variant === 'object'
 
                   if (isVariant) {
-                    price = variant?.priceInUSD
+                    price = variant?.priceInNGN
 
                     const imageVariant = product.gallery?.find(
                       (item: NonNullable<Product['gallery']>[number]) => {
@@ -120,7 +126,7 @@ CartModal() {
                           className="z-30 flex flex-row space-x-4"
                           href={`/products/${(item.product as Product)?.slug}`}
                         >
-                          <div className="relative h-16 w-16 cursor-pointer overflow-hidden rounded-md border border-neutral-300 bg-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800">
+                          <div className="relative h-16 w-16 cursor-pointer overflow-hidden rounded-none border border-neutral-300 bg-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800">
                             {image?.url && (
                               <Image
                                 alt={image?.alt || product?.title || ''}
@@ -135,7 +141,7 @@ CartModal() {
                           <div className="flex flex-1 flex-col text-base">
                             <span className="leading-tight">{product?.title}</span>
                             {isVariant && variant ? (
-                              <p className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
+                              <p className="text-xs text-primary-foreground uppercase tracking-widest">
                                 {variant.options
                                   ?.map(
                                     (
@@ -156,10 +162,10 @@ CartModal() {
                           {typeof price === 'number' && (
                             <Price
                               amount={price}
-                              className="flex justify-end space-y-2 text-right text-sm"
+                              className="flex justify-end space-y-2 text-right text-sm tracking-widest text-primary-foreground"
                             />
                           )}
-                          <div className="ml-auto flex h-9 flex-row items-center rounded-lg border">
+                          <div className="ml-auto flex h-9 flex-row items-center border">
                             <EditItemQuantityButton item={item} type="minus" />
                             <p className="w-6 text-center">
                               <span className="w-full text-sm">{item.quantity}</span>
@@ -177,17 +183,24 @@ CartModal() {
                 <div className="py-4 text-sm text-neutral-500 dark:text-neutral-400">
                   {typeof cart?.subtotal === 'number' && (
                     <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
-                      <p>Total</p>
+                      <p className="tracking-widest uppercase">Total</p>
                       <Price
                         amount={cart?.subtotal}
-                        className="text-right text-base text-black dark:text-white"
+                        className="text-right text-base dark:text-white tracking-widest text-primary-foreground"
                       />
                     </div>
                   )}
 
                   <Button asChild>
-                    <Link className="w-full" href="/checkout">
-                      Proceed to Checkout
+                    <Link
+                      className="w-full group relative isolate max-w-80 overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
+                      href="/checkout"
+                    >
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+                      />
+                      <span className="relative">Proceed to Checkout</span>
                     </Link>
                   </Button>
                 </div>

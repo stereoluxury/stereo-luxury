@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -68,14 +69,21 @@ const AddressesModal: React.FC<Props> = ({ setAddress }) => {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant={'outline'}>{'Select an address'}</Button>
+        <Button className="rounded-none" variant={'outline'}>
+          {'Select an address'}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{'Select an address'}</DialogTitle>
+          <DialogTitle className="uppercase tracking-widest text-primary-foreground font-anton">
+            {'Select an address'}
+          </DialogTitle>
+          <DialogDescription className="uppercase tracking-widest">
+            {'Please select an address'}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-12">
+        <div className="flex flex-col gap-12 uppercase tracking-widest">
           <ul className="flex flex-col gap-8">
             {addresses.map((address) => (
               <li key={address.id} className="border-b pb-8 last:border-none">
@@ -88,6 +96,8 @@ const AddressesModal: React.FC<Props> = ({ setAddress }) => {
                         setAddress(address)
                         closeModal()
                       }}
+                      variant={'outline'}
+                      className="uppercase tracking-widest rounded-none bg-primary-foreground hover:bg-primary-foreground/50"
                     >
                       Select
                     </Button>

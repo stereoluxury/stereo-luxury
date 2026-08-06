@@ -6,7 +6,7 @@ import type { Product, Variant } from '@/payload-types'
 import { useAddToCart } from '@/hooks/useAddToCart'
 import clsx from 'clsx'
 import { useSearchParams } from 'next/navigation'
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 
 type Props = {
   product: Product
