@@ -12,8 +12,10 @@ type Props = {
 export const OrderItem: React.FC<Props> = ({ order }) => {
   const itemsLabel = order.items?.length === 1 ? 'Item' : 'Items'
 
+  
+
   return (
-    <div className="bg-card border rounded-lg px-4 py-2 md:px-6 md:py-4 flex flex-col sm:flex-row gap-12 sm:items-center sm:justify-between">
+    <div className="bg-card border px-4 py-2 md:px-6 md:py-4 flex flex-col sm:flex-row gap-12 sm:items-center sm:justify-between">
       <div className="flex flex-col gap-4">
         <h3 className="text-sm uppercase font-archivo tracking-widest text-primary/50 truncate max-w-32 sm:max-w-none">{`#${order.id}`}</h3>
 
@@ -40,7 +42,7 @@ export const OrderItem: React.FC<Props> = ({ order }) => {
         </p>
       </div>
 
-      <Button variant="outline" asChild className="self-start sm:self-auto">
+      <Button variant="outline" asChild className="self-start sm:self-auto rounded-none">
         <Link href={`/orders/${order.id}`}>View Order</Link>
       </Button>
     </div>

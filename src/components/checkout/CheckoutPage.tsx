@@ -6,6 +6,7 @@ import { Price } from '@/components/Price'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuth } from '@/providers/Auth'
 import { useTheme } from '@/providers/Theme'
 import Link from 'next/link'
@@ -70,8 +71,20 @@ export const CheckoutPage: React.FC = () => {
     }
   }, [])
 
+  // As soon as we have an authorization URL back from Paystack, send the
+  // user straight there instead of making them click a second button.
+  useEffect(() => {
+    const authorizationUrl = paymentData?.['authorizationUrl'] as string | undefined
+
+    if (authorizationUrl) {
+      window.open(authorizationUrl, '_blank', 'noopener,noreferrer')
+    }
+  }, [paymentData])
+
   const initiatePaymentIntent = useCallback(
     async (paymentID: string) => {
+      setIsRedirectingToPaystack(true)
+
       try {
         const paymentData = (await initiatePayment(paymentID, {
           additionalData: {
@@ -83,9 +96,13 @@ export const CheckoutPage: React.FC = () => {
 
         if (paymentData) {
           setPaymentData(paymentData)
+        } else {
+          setIsRedirectingToPaystack(false)
         }
       } catch (error) {
         const errorData = error instanceof Error ? JSON.parse(error.message) : {}
+        console.log(errorData, error);
+        
         let errorMessage = 'An error occurred while initiating payment.'
 
         if (errorData?.cause?.code === 'OutOfStock') {
@@ -94,6 +111,7 @@ export const CheckoutPage: React.FC = () => {
 
         setError(errorMessage)
         toast.error(errorMessage)
+        setIsRedirectingToPaystack(false)
       }
     },
     [billingAddress, billingAddressSameAsShipping, shippingAddress],
@@ -281,20 +299,29 @@ export const CheckoutPage: React.FC = () => {
         )}
 
         {!paymentData && (
-          <Button
-            disabled={!canGoToPayment || isRedirectingToPaystack}
-            onClick={(e) => {
-              e.preventDefault()
-              void initiatePaymentIntent('paystack')
-            }}
-            className="self-start group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
-          >
-            <span
-              aria-hidden
-              className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
-            />
-            {isRedirectingToPaystack ? 'Preparing payment…' : 'Go to payment'}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  disabled={!canGoToPayment || isRedirectingToPaystack}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    void initiatePaymentIntent('paystack')
+                  }}
+                  className="self-start group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
+                >
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+                  />
+                  {isRedirectingToPaystack ? 'Processing payment' : 'Go to payment'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You'll be redirected to Paystack to complete your payment securely.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {!paymentData?.['clientSecret'] && error && (
@@ -315,26 +342,22 @@ export const CheckoutPage: React.FC = () => {
 
         <Suspense fallback={<React.Fragment />}>
           {/* @ts-ignore */}
-          {paymentData && paymentData?.['authorizationUrl'] && (
+          {isRedirectingToPaystack && paymentData?.['authorizationUrl'] && (
             <div className="pb-16">
-              <h2 className="font-medium text-3xl">Payment</h2>
-              {error && <p>{`Error: ${error}`}</p>}
-              <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-4 items-start">
                 <p className="text-sm text-primary/70">
-                  You’ll be redirected to Paystack to complete your payment securely.
+                  Redirecting you to Paystack to complete your payment securely…
                 </p>
-                <Button
+                {/* <Button
+                  variant="ghost"
+                  className="self-start"
                   onClick={() => {
-                    const authorizationUrl = paymentData['authorizationUrl'] as string
-                    window.open(authorizationUrl, '_blank', 'noopener,noreferrer')
+                    setPaymentData(null)
+                    setIsRedirectingToPaystack(false)
                   }}
-                  variant="default"
                 >
-                  Continue to Paystack
-                </Button>
-                <Button variant="ghost" className="self-start" onClick={() => setPaymentData(null)}>
                   Cancel payment
-                </Button>
+                </Button> */}
               </div>
             </div>
           )}

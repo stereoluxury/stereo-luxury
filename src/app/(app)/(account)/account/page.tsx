@@ -48,13 +48,13 @@ export default async function AccountPage() {
 
   return (
     <>
-      <div className="border p-8 rounded-lg bg-primary-foreground">
-        <h1 className="text-3xl font-medium mb-8">Account settings</h1>
+      <div className="border p-8 tracking-widest uppercase">
+        <h1 className="text-3xl font-medium mb-8 font-anton">Account settings</h1>
         <AccountForm />
       </div>
 
-      <div className=" border p-8 rounded-lg bg-primary-foreground">
-        <h2 className="text-3xl font-medium mb-8">Recent Orders</h2>
+      <div className="border p-8 tracking-widest uppercase">
+        <h2 className="text-3xl font-medium mb-8 font-anton">Recent Orders</h2>
 
         <div className="prose dark:prose-invert mb-8">
           <p>
@@ -77,7 +77,7 @@ export default async function AccountPage() {
           </ul>
         )}
 
-        <Button asChild variant="default">
+        <Button className="rounded-none bg-primary-foreground text-primary hover:bg-primary-foreground/50" asChild variant="default">
           <Link href="/orders">View all orders</Link>
         </Button>
       </div>

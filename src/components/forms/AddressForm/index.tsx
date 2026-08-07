@@ -149,7 +149,7 @@ export const AddressForm: React.FC<Props> = ({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex flex-col gap-4 mb-8">
+      <div className="flex flex-col gap-4 mb-8 tracking-widest uppercase">
         <div className="flex flex-col md:flex-row gap-4">
           <FormItem className="shrink">
             <Label htmlFor="title">Title</Label>

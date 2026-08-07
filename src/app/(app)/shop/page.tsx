@@ -3,7 +3,6 @@ import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
-import React from 'react'
 
 export const metadata = {
   description: 'Search for products in the store.',
@@ -80,7 +79,7 @@ export default async function ShopPage({ searchParams }: Props) {
   const resultsText = products.docs.length > 1 ? 'results' : 'result'
 
   return (
-    <div>
+    <div className="uppercase tracking-widest">
       {searchValue ? (
         <p className="mb-4">
           {products.docs?.length === 0
@@ -91,7 +90,9 @@ export default async function ShopPage({ searchParams }: Props) {
       ) : null}
 
       {!searchValue && products.docs?.length === 0 && (
-        <p className="mb-4">No products found. Please try different filters.</p>
+        <p className="mb-4 uppercase tracking-widest">
+          No products found. Please try different filters.
+        </p>
       )}
 
       {products?.docs.length > 0 ? (

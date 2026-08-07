@@ -1,9 +1,6 @@
 import { Media } from '@/components/Media'
-import { OrderStatus } from '@/components/OrderStatus'
 import { Price } from '@/components/Price'
-import { Button } from '@/components/ui/button'
-import { Media as MediaType, Order, Product, Variant } from '@/payload-types'
-import { formatDateTime } from '@/utilities/formatDateTime'
+import { Product, Variant } from '@/payload-types'
 import Link from 'next/link'
 
 type Props = {
@@ -24,6 +21,8 @@ export const ProductItem: React.FC<Props> = ({
   variant,
   currencyCode,
 }) => {
+  console.log('product', product)
+
   const { title } = product
 
   const metaImage =
@@ -55,22 +54,49 @@ export const ProductItem: React.FC<Props> = ({
     }
   }
 
-  const itemPrice = variant?.priceInUSD || product.priceInUSD
-  const itemURL = `/products/${product.slug}${variant ? `?variant=${variant.id}` : ''}`
+  console.log('variant', variant)
+  console.log('variantTypes', product.variantTypes)
+
+  const itemPrice = variant?.priceInNGN || product.priceInNGN
+  const variantQuery = variant
+    ? (() => {
+        const params = new URLSearchParams()
+
+        variant.options?.forEach((option) => {
+          if (typeof option !== 'object') return
+
+          const variantType = product.variantTypes?.find((type) => {
+            if (typeof type === 'string') return type === option.variantType
+
+            return type.id === option.variantType
+          })
+
+          if (variantType && typeof variantType !== 'string') {
+            params.set(variantType.name, option.id)
+          }
+        })
+
+        params.set('variant', variant.id)
+
+        return `?${params.toString()}`
+      })()
+    : ''
+
+  const itemURL = `/products/${product.slug}${variantQuery}`
 
   return (
     <div className="flex items-center gap-4">
-      <div className="flex items-stretch justify-stretch h-20 w-20 p-2 rounded-lg border">
+      <div className="flex items-stretch justify-stretch h-20 w-20 p-2 border">
         <div className="relative w-full h-full">
           {image && typeof image !== 'string' && (
-            <Media className="" fill imgClassName="rounded-lg object-cover" resource={image} />
+            <Media className="" fill imgClassName="rounded-none object-cover" resource={image} />
           )}
         </div>
       </div>
       <div className="flex grow justify-between items-center">
         <div className="flex flex-col gap-1">
           <p className="font-medium text-lg">
-            <Link href={itemURL}>{title}</Link>
+            <Link className="hover:underline" href={itemURL}>{title}</Link>
           </p>
           {variant && (
             <p className="text-sm font-archivo text-primary/50 tracking-widest">

@@ -24,9 +24,7 @@ export function QuickAddButton({ className, product }: Props) {
   const sharedClassName = cn(
     // Entrance: slides up from the bottom of the card on card hover/focus.
     'group/btn pointer-events-none absolute inset-x-3 bottom-3 translate-y-[150%] opacity-0',
-    'isolate overflow-hidden rounded-none bg-primary-foreground font-archivo text-[14px] font-bold uppercase tracking-widest text-primary',
-    // Single transition declaration covers transform, opacity, AND color —
-    // don't add a second transition-* utility here, it'll override this one.
+    'isolate overflow-hidden rounded-none bg-primary-foreground font-archivo text-[14px] uppercase tracking-widest text-primary',
     'transition-all duration-300 ease-out',
     'group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100',
     'group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100',
@@ -36,7 +34,7 @@ export function QuickAddButton({ className, product }: Props) {
   const fill = (
     <span
       aria-hidden
-      className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover/btn:scale-y-100"
+      className="absolute inset-0 -z-10 translate-y-full bg-primary transition-transform duration-300 ease-out group-hover/btn:translate-y-0"
     />
   )
 

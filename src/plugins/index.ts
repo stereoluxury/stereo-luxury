@@ -89,7 +89,7 @@ const paystackAdapter = (): PaymentAdapter => ({
       }
     })
 
-    const amount = Math.round((cart.subtotal || 0) * 100)
+    const amount = cart.subtotal    
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {

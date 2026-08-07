@@ -36,10 +36,7 @@ export function CartModal() {
   const totalQuantity = useMemo(() => {
     if (!cart || !cart.items || !cart.items.length) return undefined
     return cart.items.reduce((quantity, item) => (item.quantity || 0) + quantity, 0)
-  }, [cart])
-
-  console.log(cart);
-  
+  }, [cart])  
 
   return (
     <Sheet onOpenChange={setIsOpen} open={isOpen}>

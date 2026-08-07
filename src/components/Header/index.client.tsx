@@ -12,6 +12,7 @@ import { LogoIcon } from '@/components/icons/logo'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/utilities/cn'
 import Logo from '../Logo'
+import { useScroll } from '@/hooks/use-scroll'
 
 type Props = {
   header: Header
@@ -20,9 +21,15 @@ type Props = {
 export function HeaderClient({ header }: Props) {
   const menu = header.navItems || []
   const pathname = usePathname()
+  const scrolled = useScroll(10)
 
   return (
-    <div className="relative z-20">
+    <div
+      className={cn('sticky top-0 z-50 w-full border-transparent border-b', {
+        'border-border bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/50':
+          scrolled,
+      })}
+    >
       <nav className="flex items-center md:items-end justify-between container pt-2">
         <div className="block flex-none md:hidden">
           <Suspense fallback={null}>

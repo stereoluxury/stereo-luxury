@@ -181,7 +181,12 @@ export const AccountForm: React.FC = () => {
           </div>
         </Fragment>
       )}
-      <Button disabled={isLoading || isSubmitting || !isDirty} type="submit" variant="default">
+      <Button
+        className="rounded-none bg-primary-foreground text-primary hover:bg-primary-foreground/50"
+        disabled={isLoading || isSubmitting || !isDirty}
+        type="submit"
+        variant="default"
+      >
         {isLoading || isSubmitting
           ? 'Processing'
           : changePassword

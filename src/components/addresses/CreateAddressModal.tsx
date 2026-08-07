@@ -58,8 +58,8 @@ export const CreateAddressModal: React.FC<Props> = ({
       </DialogTrigger>
       <DialogContent className='xc"'>
         <DialogHeader>
-          <DialogTitle className="font-anton text-primary-foreground">{modalTitle}</DialogTitle>
-          <DialogDescription>This address will be connected to your account.</DialogDescription>
+          <DialogTitle className="font-anton text-primary-foreground uppercase">{modalTitle}</DialogTitle>
+          <DialogDescription className="uppercase tracking-widest">This address will be connected to your account.</DialogDescription>
         </DialogHeader>
 
         <AddressForm
