@@ -1,10 +1,10 @@
-import type { Product, Variant } from '@/payload-types'
+import type { Product } from '@/payload-types'
 
-import Link from 'next/link'
-import React from 'react'
-import clsx from 'clsx'
 import { Media } from '@/components/Media'
 import { Price } from '@/components/Price'
+import clsx from 'clsx'
+import Link from 'next/link'
+import React from 'react'
 import { QuickAddButton } from './QuickAddButton'
 
 type Props = {
@@ -35,12 +35,12 @@ export const ProductGridItem: React.FC<Props> = ({ product }) => {
 
   return (
     <Link className="group relative inline-block h-full w-full" href={`/products/${product.slug}`}>
-      <div className="relative overflow-hidden rounded-2xl">
+      <div className="relative overflow-hidden rounded-none">
         {image ? (
           <Media
             className="relative aspect-square object-cover"
             height={80}
-            imgClassName={clsx('h-full w-full rounded-2xl object-cover', {
+            imgClassName={clsx('h-full w-full rounded-none object-cover', {
               'transition duration-300 ease-in-out group-hover:scale-102': true,
             })}
             resource={image}

@@ -4,7 +4,7 @@ import type { Media as MediaType } from '@/payload-types'
 
 import { Media } from '@/components/Media'
 import { useSearchParams } from 'next/navigation'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect } from 'react'
 
 import {
   Carousel,
@@ -71,7 +71,11 @@ export const Gallery: React.FC<Props> = ({ gallery }) => {
           {gallery.map((item, i) => (
             <CarouselItem key={`main-${item.image.id}-${i}`}>
               <div className="relative w-full overflow-hidden">
-                <Media resource={item.image} className="w-full" imgClassName="w-full rounded-lg" />
+                <Media
+                  resource={item.image}
+                  className="w-full"
+                  imgClassName="w-full rounded-none"
+                />
               </div>
             </CarouselItem>
           ))}

@@ -22,7 +22,7 @@ export const MediaBlock: React.FC<
   const {
     captionClassName,
     className,
-    enableGutter = true,
+    enableGutter = false,
     imgClassName,
     media,
     staticImage,
@@ -43,7 +43,7 @@ export const MediaBlock: React.FC<
       )}
     >
       <Media
-        imgClassName={cn('border border-border rounded-[0.8rem]', imgClassName)}
+        imgClassName={cn('border border-border rounded-none', imgClassName)}
         resource={media}
         src={staticImage}
       />

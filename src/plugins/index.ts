@@ -460,8 +460,6 @@ export const plugins: Plugin[] = [
         disableLocalStorage: true,
 
         generateFileURL: ({ filename }) => {
-          console.log(getResourceType(filename))
-          console.log(filename)
           return cloudinary.url(`media/${filename}`, {
             secure: true,
             resource_type: getResourceType(filename), // <-- fix here too

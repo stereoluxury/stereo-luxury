@@ -25,9 +25,9 @@ export const LogoutPage: React.FC = (props) => {
   return (
     <Fragment>
       {(error || success) && (
-        <div className="prose dark:prose-invert">
-          <h1>{error || success}</h1>
-          <p>
+        <div className="prose dark:prose-invert uppercase">
+          <h1 className="font-anton text-primary-foreground">{error || success}</h1>
+          <p className="tracking-widest">
             What would you like to do next?
             <Fragment>
               {' '}

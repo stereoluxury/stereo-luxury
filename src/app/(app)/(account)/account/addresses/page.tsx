@@ -47,7 +47,7 @@ export default async function AddressesPage() {
   return (
     <>
       <div className="border p-8 uppercase">
-        <h1 className="text-3xl font-medium mb-8 font-anton">Addresses</h1>
+        <h1 className="text-3xl font-medium mb-8 font-anton text-primary-foreground">Addresses</h1>
 
         <div className="mb-8 tracking-widest">
           <AddressListing />

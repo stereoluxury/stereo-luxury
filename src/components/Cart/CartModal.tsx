@@ -56,7 +56,7 @@ export function CartModal() {
         </SheetHeader>
 
         {!cart || cart?.items?.length === 0 ? (
-          <div className="text-center flex flex-col items-center gap-2">
+          <div className="text-center flex flex-col items-center gap-2 uppercase tracking-widest">
             <ShoppingCart className="h-16" />
             <p className="text-center text-2xl font-bold">Your cart is empty.</p>
           </div>

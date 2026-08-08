@@ -40,7 +40,7 @@ export default async function Orders() {
   return (
     <>
       <div className="border p-8 w-full uppercase">
-        <h1 className="text-3xl font-medium mb-8 font-anton">Orders</h1>
+        <h1 className="text-3xl font-medium mb-8 font-anton text-primary-foreground">Orders</h1>
         {(!orders || !Array.isArray(orders) || orders?.length === 0) && (
           <p className="">You have no orders.</p>
         )}
