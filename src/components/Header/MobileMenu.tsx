@@ -99,7 +99,7 @@ export function MobileMenu({ menu }: Props) {
           </div>
         ) : (
           <div className="uppercase tracking-widest">
-            <h2 className="text-xl mb-4">My account</h2>
+            {/* <h2 className="text-xl mb-4">My account</h2> */}
             <div className="mt-4 flex flex-col gap-2 md:flex-row sm:items-center">
               <Button asChild className="w-full sm:flex-1 rounded-none" variant="outline">
                 <Link href="/login">Log in</Link>
