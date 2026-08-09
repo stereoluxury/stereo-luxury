@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentPropsWithoutRef, CSSProperties } from 'react'
 import clsx from 'clsx'
 
 import styles from './Logo.module.scss'
@@ -12,12 +12,23 @@ const logo = {
 
 type LogoVariant = 'default' | 'admin' | 'icon'
 
+type Size = number | string
+
 export type LogoProps = Pick<
   ComponentPropsWithoutRef<'img'>,
   'alt' | 'aria-hidden' | 'className' | 'decoding' | 'loading' | 'title'
 > & {
   priority?: 'auto' | 'high' | 'low'
   variant?: LogoVariant
+  /** Overrides the variant's default width. Number = px, or pass any CSS length ('4rem', '50%', etc). */
+  width?: Size
+  /** Overrides the variant's default height. Number = px, or pass any CSS length. */
+  height?: Size
+}
+
+const toCSSLength = (value: Size | undefined): string | undefined => {
+  if (value === undefined) return undefined
+  return typeof value === 'number' ? `${value}px` : value
 }
 
 export const Logo = (props: LogoProps) => {
@@ -29,7 +40,18 @@ export const Logo = (props: LogoProps) => {
     priority = 'low',
     title,
     variant = 'default',
+    width,
+    height,
   } = props
+
+  const style: CSSProperties | undefined =
+    width !== undefined || height !== undefined
+      ? {
+          width: toCSSLength(width),
+          height: toCSSLength(height),
+          maxWidth: width !== undefined ? 'none' : undefined, // let explicit width win over the .logo max-width cap
+        }
+      : undefined
 
   return (
     /* eslint-disable @next/next/no-img-element */
@@ -42,6 +64,7 @@ export const Logo = (props: LogoProps) => {
       height={logo.height}
       loading={loading}
       src={logo.src}
+      style={style}
       title={title}
       width={logo.width}
     />
@@ -58,6 +81,8 @@ export const AdminLogo = (props: LogoProps) => (
     priority={props.priority || 'high'}
     title={props.title}
     variant="admin"
+    width={props.width}
+    height={props.height}
   />
 )
 
@@ -71,6 +96,8 @@ export const AdminLogoIcon = (props: LogoProps) => (
     priority={props.priority || 'high'}
     title={props.title}
     variant="icon"
+    width={props.width}
+    height={props.height}
   />
 )
 
