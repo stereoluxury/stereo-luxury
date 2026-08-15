@@ -1,12 +1,9 @@
 import type { Footer } from '@/payload-types'
 
 import { FooterMenu } from '@/components/Footer/menu'
-import { ThemeSelector } from '@/providers/Theme/ThemeSelector'
 import { getCachedGlobal } from '@/utilities/getGlobals'
 import Link from 'next/link'
-import React, { Suspense } from 'react'
-import { LogoIcon } from '@/components/icons/logo'
-import { TwitterIcon } from 'lucide-react'
+import { Suspense } from 'react'
 import Logo from '../Logo'
 
 const { COMPANY_NAME, SITE_NAME } = process.env
@@ -50,8 +47,8 @@ export async function Footer() {
         </div>
       </div>
       <div className="border-t border-neutral-200 py-6 text-sm dark:border-neutral-700">
-        <div className="container mx-auto flex w-full flex-col justify-between items-center gap-1 md:flex-row md:gap-0">
-          <p>
+        <div className="container mx-auto flex w-full flex-col gap-4 justify-between items-center md:flex-row md:gap-0">
+          <p className='text-center'>
             &copy; {copyrightDate} {copyrightName}
             {copyrightName.length && !copyrightName.endsWith('.') ? '.' : ''} All rights reserved.
           </p>
