@@ -21,7 +21,7 @@ export const ProductItem: React.FC<Props> = ({
   variant,
   currencyCode,
 }) => {
-  console.log('product', product)
+  // console.log('product', product)
 
   const { title } = product
 
@@ -54,8 +54,8 @@ export const ProductItem: React.FC<Props> = ({
     }
   }
 
-  console.log('variant', variant)
-  console.log('variantTypes', product.variantTypes)
+  // console.log('variant', variant)
+  // console.log('variantTypes', product.variantTypes)
 
   const itemPrice = variant?.priceInNGN || product.priceInNGN
   const variantQuery = variant

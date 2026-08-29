@@ -57,7 +57,7 @@ async function CategoryList({ gender, categorySegments }: Props) {
     }),
   )
 
-  console.log(childrenWithCounts);
+  // console.log(childrenWithCounts);
   
 
   return (
