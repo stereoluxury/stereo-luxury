@@ -8,36 +8,38 @@ import { Check } from 'lucide-react'
 
 type Props = {
   category: Category
+  count: number
 }
 
-export const CategoryItem: React.FC<Props> = ({ category }) => {
+export const CategoryItem: React.FC<Props> = ({ category, count }) => {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const isActive = useMemo(() => {
-    return searchParams.get('category') === String(category.id)
+    return searchParams.getAll('category').includes(String(category.id))
   }, [category.id, searchParams])
 
   const setQuery = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString())
+    const current = params.getAll('category')
+    params.delete('category')
 
-    if (isActive) {
-      params.delete('category')
-    } else {
-      params.set('category', String(category.id))
-    }
+    const next = isActive
+      ? current.filter((id) => id !== String(category.id))
+      : [...current, String(category.id)]
+
+    next.forEach((id) => params.append('category', id))
 
     const newParams = params.toString()
-
-    router.push(pathname + '?' + newParams)
+    router.push(newParams ? `${pathname}?${newParams}` : pathname)
   }, [category.id, isActive, pathname, router, searchParams])
 
   return (
     <button
       aria-checked={isActive}
       role="checkbox"
-      onClick={() => setQuery()}
+      onClick={setQuery}
       className="group flex items-center gap-2 py-1 hover:cursor-pointer"
     >
       <span
@@ -64,6 +66,7 @@ export const CategoryItem: React.FC<Props> = ({ category }) => {
         })}
       >
         {category.title}
+        <span> ({count})</span>
       </span>
     </button>
   )

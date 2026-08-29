@@ -19,6 +19,7 @@ import { normalizePaystackStatus } from '@/utilities/paystack'
 import { currenciesConfig } from '@/lib/constants'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import type { HandleDelete, HandleUpload } from '@payloadcms/plugin-cloud-storage/types'
+import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary'
 
 const generateTitle: GenerateTitle<Product | Page> = ({ doc }) => {
@@ -406,6 +407,10 @@ export const plugins: Plugin[] = [
   seoPlugin({
     generateTitle,
     generateURL,
+  }),
+  nestedDocsPlugin({
+    collections: ['categories'],
+    generateURL: (docs) => docs.reduce((url, doc) => `${url}/${doc.slug}`, ''),
   }),
   formBuilderPlugin({
     fields: {

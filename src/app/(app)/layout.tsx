@@ -64,7 +64,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <Preloader />
         <div className="site-shell flex min-h-screen flex-col">
           <Providers>
-            <AdminBar />
+            {/* <AdminBar /> */}
             <LivePreviewListener />
 
             <Header />

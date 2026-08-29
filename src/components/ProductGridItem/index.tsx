@@ -11,8 +11,26 @@ type Props = {
   product: Partial<Product>
 }
 
+function isOutOfStock(product: Partial<Product>): boolean {
+  if (product.enableVariants) {
+    const variantDocs = product.variants?.docs
+    if (!variantDocs || variantDocs.length === 0) return false
+    // Out of stock only if ALL variants are sold out
+    return variantDocs.every((v) => {
+      if (typeof v !== 'object') return false
+      const inv = v.inventory
+      return typeof inv === 'number' ? inv <= 0 : inv == null
+    })
+  }
+  // Non-variant: check the product's own inventory field
+  const inv = product.inventory
+  
+  return typeof inv === 'number' ? inv <= 0 : false
+}
+
 export const ProductGridItem: React.FC<Props> = ({ product }) => {
   const { gallery, priceInNGN, title } = product
+  const outOfStock = isOutOfStock(product)  
 
   let price = priceInNGN
 
@@ -31,7 +49,7 @@ export const ProductGridItem: React.FC<Props> = ({ product }) => {
   }
 
   const image =
-    gallery?.[0]?.image && typeof gallery[0]?.image !== 'string' ? gallery[0]?.image : false    
+    gallery?.[0]?.image && typeof gallery[0]?.image !== 'string' ? gallery[0]?.image : false
 
   return (
     <Link className="group relative inline-block h-full w-full" href={`/products/${product.slug}`}>
@@ -48,15 +66,23 @@ export const ProductGridItem: React.FC<Props> = ({ product }) => {
           />
         ) : null}
 
-        <QuickAddButton product={product} />
+        {/* Out of stock overlay badge */}
+        {outOfStock && (
+          <div className="absolute inset-0 flex items-end justify-start p-3 pointer-events-none">
+            <span className="bg-black/70 text-white text-xs font-archivo tracking-widest uppercase px-2 py-1">
+              Out of Stock
+            </span>
+          </div>
+        )}
+
+        {!outOfStock && <QuickAddButton product={product} />}
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3 font-archivo tracking-widest text-[#e2e2e2]">
-        <div className="uppercase font-bold">{title}</div>
-
+        <div className={`uppercase font-bold ${outOfStock ? 'opacity-50' : ''}`}>{title}</div>
         {typeof price === 'number' && (
-          <div className="">
-            <Price amount={price} className='text-primary-foreground' />
+          <div className={outOfStock ? 'opacity-50' : ''}>
+            <Price amount={price} className="text-primary-foreground" />
           </div>
         )}
       </div>

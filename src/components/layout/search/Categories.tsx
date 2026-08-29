@@ -3,17 +3,62 @@ import { getPayload } from 'payload'
 import clsx from 'clsx'
 import React, { Suspense } from 'react'
 
-import { FilterList } from './filter'
 import { CategoryItem } from './Categories.client'
 import { AccordionContent, AccordionTrigger } from '@/components/ui/accordion'
+import {
+  buildCategoryTree,
+  findCategoryByPath,
+  getAllCategoriesFlat,
+  parentId as _parentId,
+} from '@/utilities/categories'
 
-async function CategoryList() {
+type Props = {
+  gender: string
+  categorySegments?: string[]
+}
+
+async function CategoryList({ gender, categorySegments }: Props) {
+  const allCategories = await getAllCategoriesFlat()
+  const { childrenByParent, getDescendantIds } = buildCategoryTree(allCategories)
+
+  let children: typeof allCategories
+
+  if (categorySegments?.length) {
+    const current = findCategoryByPath(allCategories, [gender, ...categorySegments])
+    if (!current) return null
+    children = childrenByParent.get(String(current.id)) ?? []
+  } else {
+    const root = allCategories.find((c) => {
+      const pid = typeof c.parent === 'object' && c.parent ? c.parent.id : c.parent
+      return !pid && c.gender === gender && c.slug === gender
+    })
+    if (!root) return null
+    children = childrenByParent.get(String(root.id)) ?? []
+  }
+
+  if (children.length === 0) return null
+
   const payload = await getPayload({ config: configPromise })
 
-  const categories = await payload.find({
-    collection: 'categories',
-    sort: 'title',
-  })
+  const childrenWithCounts = await Promise.all(
+    children.map(async (child) => {
+      const ids = [String(child.id), ...getDescendantIds(String(child.id))]
+      const { totalDocs } = await payload.count({
+        collection: 'products',
+        where: {
+          and: [
+            { _status: { equals: 'published' } },
+            { gender: { equals: gender } },
+            { categories: { in: ids } },
+          ],
+        },
+      })
+      return { category: child, count: totalDocs }
+    }),
+  )
+
+  console.log(childrenWithCounts);
+  
 
   return (
     <div>
@@ -25,13 +70,11 @@ async function CategoryList() {
 
       <AccordionContent>
         <ul>
-          {categories.docs.map((category) => {
-            return (
-              <li key={category.id} className="font-archivo">
-                <CategoryItem category={category} />
-              </li>
-            )
-          })}
+          {childrenWithCounts.map(({ category, count }) => (
+            <li key={category.id} className="font-archivo">
+              <CategoryItem category={category} count={count} />
+            </li>
+          ))}
         </ul>
       </AccordionContent>
     </div>
@@ -42,7 +85,7 @@ const skeleton = 'mb-3 h-4 w-5/6 animate-pulse rounded'
 const activeAndTitles = 'bg-neutral-800 dark:bg-neutral-300'
 const items = 'bg-neutral-400 dark:bg-neutral-700'
 
-export function Categories() {
+export function Categories(props: Props) {
   return (
     <Suspense
       fallback={
@@ -62,7 +105,7 @@ export function Categories() {
         </>
       }
     >
-      <CategoryList />
+      <CategoryList {...props} />
     </Suspense>
   )
 }
