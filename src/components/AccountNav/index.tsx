@@ -14,30 +14,28 @@ export const AccountNav: React.FC<Props> = ({ className }) => {
 
   return (
     <div className={clsx(className)}>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-2 uppercase tracking-widest">
         <li>
-          <Button asChild variant="link">
-            <Link
-              href="/account"
-              className={clsx('text-primary/50 hover:text-primary hover:no-underline', {
-                'text-primary': pathname === '/account',
-              })}
-            >
-              Account settings
-            </Link>
+          <Button
+            className={clsx('text-primary/50 hover:text-primary-foreground', {
+              'text-primary-foreground underline': pathname === '/account',
+            })}
+            asChild
+            variant="link"
+          >
+            <Link href="/account">Account settings</Link>
           </Button>
         </li>
 
         <li>
-          <Button asChild variant="link">
-            <Link
-              href="/account/addresses"
-              className={clsx('text-primary/50 hover:text-primary hover:no-underline', {
-                'text-primary': pathname === '/account/addresses',
-              })}
-            >
-              Addresses
-            </Link>
+          <Button
+            className={clsx('text-primary/50 hover:text-primary-foreground', {
+              'text-primary-foreground underline': pathname === '/account/addresses',
+            })}
+            asChild
+            variant="link"
+          >
+            <Link href="/account/addresses">Addresses</Link>
           </Button>
         </li>
 
@@ -45,8 +43,8 @@ export const AccountNav: React.FC<Props> = ({ className }) => {
           <Button
             asChild
             variant="link"
-            className={clsx('text-primary/50 hover:text-primary hover:no-underline', {
-              'text-primary': pathname === '/orders' || pathname.includes('/orders'),
+            className={clsx('text-primary/50 hover:text-primary-foreground', {
+              'text-primary-foreground underline': pathname === '/orders' || pathname.includes('/orders'),
             })}
           >
             <Link href="/orders">Orders</Link>
@@ -59,8 +57,8 @@ export const AccountNav: React.FC<Props> = ({ className }) => {
       <Button
         asChild
         variant="link"
-        className={clsx('text-primary/50 hover:text-primary hover:no-underline', {
-          'text-primary': pathname === '/logout',
+        className={clsx('text-primary/50 hover:text-primary-foreground', {
+          'text-primary-foreground': pathname === '/logout',
         })}
       >
         <Link href="/logout">Log out</Link>

@@ -8,6 +8,7 @@ import { MediaBlock } from '@/blocks/MediaBlock/Component'
 import { ThreeItemGridBlock } from '@/blocks/ThreeItemGrid/Component'
 import { toKebabCase } from '@/utilities/toKebabCase'
 import React, { Fragment } from 'react'
+import { FeaturesBlock } from './FeaturesBlock/Component'
 
 import type { Page } from '../payload-types'
 
@@ -20,6 +21,7 @@ const blockComponents = {
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
   threeItemGrid: ThreeItemGridBlock,
+  features: FeaturesBlock,
 }
 
 export const RenderBlocks: React.FC<{

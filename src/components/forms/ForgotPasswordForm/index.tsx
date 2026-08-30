@@ -50,7 +50,7 @@ export const ForgotPasswordForm: React.FC = () => {
     <Fragment>
       {!success && (
         <React.Fragment>
-          <h1 className="text-xl mb-4">Forgot Password</h1>
+          <h1 className="text-xl md:text-3xl mb-4 text-primary-foreground font-anton">Forgot Password</h1>
           <div className="prose dark:prose-invert mb-8">
             <p>
               {`Please enter your email below. You will receive an email message with instructions on
@@ -58,7 +58,7 @@ export const ForgotPasswordForm: React.FC = () => {
               <Link href="/admin/collections/users">login to the admin dashboard</Link>.
             </p>
           </div>
-          <form className="max-w-lg" onSubmit={handleSubmit(onSubmit)}>
+          <form className="max-w-lg tracking-widest" onSubmit={handleSubmit(onSubmit)}>
             <Message className="mb-8" error={error} />
 
             <FormItem className="mb-8">
@@ -73,7 +73,7 @@ export const ForgotPasswordForm: React.FC = () => {
               {errors.email && <FormError message={errors.email.message} />}
             </FormItem>
 
-            <Button type="submit" variant="default">
+            <Button type="submit" variant="default" className="rounded-none">
               Forgot Password
             </Button>
           </form>

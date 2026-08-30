@@ -39,14 +39,14 @@ export default async function Orders() {
 
   return (
     <>
-      <div className="border p-8 rounded-lg bg-primary-foreground w-full">
-        <h1 className="text-3xl font-medium mb-8">Orders</h1>
+      <div className="border p-8 w-full uppercase">
+        <h1 className="text-3xl font-medium mb-8 font-anton text-primary-foreground">Orders</h1>
         {(!orders || !Array.isArray(orders) || orders?.length === 0) && (
           <p className="">You have no orders.</p>
         )}
 
         {orders && orders.length > 0 && (
-          <ul className="flex flex-col gap-6">
+          <ul className="flex flex-col gap-6 tracking-widest">
             {orders?.map((order, index) => (
               <li key={order.id}>
                 <OrderItem order={order} />

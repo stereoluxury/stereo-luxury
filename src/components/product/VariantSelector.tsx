@@ -96,11 +96,13 @@ export function VariantSelector({ product }: { product: Product }) {
 
               return (
                 <Button
-                  variant={'ghost'}
                   aria-disabled={!isAvailableForSale}
-                  className={clsx('px-2', {
-                    'bg-primary/5 text-primary': isActive,
-                  })}
+                  className={clsx(
+                    'px-3 py-4 border border-primary-foreground/40 hover:border-primary-foreground/80 hover:bg-transparent bg-transparent rounded-none text-sm text-primary tracking-widest font-bold transition-all duration-300',
+                    {
+                      'bg-primary-foreground/20 hover:bg-primary-foreground/20 border-primary-foreground/80': isActive,
+                    },
+                  )}
                   disabled={!isAvailableForSale}
                   key={option.id}
                   onClick={() => {

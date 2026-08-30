@@ -52,14 +52,20 @@ export function ProductDescription({ product }: { product: Product }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        <h1 className="text-2xl font-medium">{product.title}</h1>
-        <div className="uppercase font-mono">
+    <div className="flex flex-col gap-6 uppercase">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-2xl md:text-4xl font-anton font-medium text-primary-foreground tracking-wider">
+          {product.title}
+        </h1>
+        <div className="uppercase font-archivo">
           {hasVariants ? (
-            <Price highestAmount={highestAmount} lowestAmount={lowestAmount} />
+            <Price
+              highestAmount={highestAmount}
+              lowestAmount={lowestAmount}
+              className="font-anton text-2xl"
+            />
           ) : (
-            <Price amount={amount} />
+            <Price amount={amount} className="font-anton text-2xl" />
           )}
         </div>
       </div>

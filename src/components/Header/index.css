@@ -9,7 +9,7 @@
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: var(--primary);
+    background-color: #fa0a0e;
     transition: transform 0.3s;
   }
 

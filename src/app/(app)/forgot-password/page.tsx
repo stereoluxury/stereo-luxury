@@ -7,7 +7,7 @@ import { ForgotPasswordForm } from '@/components/forms/ForgotPasswordForm'
 
 export default async function ForgotPasswordPage() {
   return (
-    <div className="container py-16">
+    <div className="container py-16 uppercase">
       <ForgotPasswordForm />
     </div>
   )

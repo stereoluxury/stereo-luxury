@@ -25,7 +25,7 @@ export const Message: React.FC<{
     return (
       <div
         className={clsx(
-          'p-4 my-8 rounded-lg',
+          'p-4 my-8',
           {
             'bg-success ': Boolean(success),
             ' bg-warning': Boolean(warning),

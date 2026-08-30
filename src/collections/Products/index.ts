@@ -50,6 +50,8 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
     enableVariants: true,
     gallery: true,
     priceInUSD: true,
+    PriceInNGN: true,
+    categories: true,
     inventory: true,
     meta: true,
   },
@@ -198,12 +200,42 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
       ],
     },
     {
+      name: 'gender',
+      admin: {
+        position: 'sidebar',
+        sortOptions: 'title',
+      },
+      type: 'select',
+      options: [
+        { label: 'Men', value: 'men' },
+        { label: 'Women', value: 'women' },
+        { label: 'Unisex', value: 'unisex' },
+      ],
+      required: true,
+    },
+    {
+      name: 'releaseDate',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        date: {
+          pickerAppearance: 'dayAndTime',
+        },
+        description:
+          'Controls when this product goes live and appears in New Arrivals. Products with a future date are treated as upcoming drops.',
+      },
+      defaultValue: () => new Date().toISOString(),
+      index: true,
+      required: true,
+    },
+    {
       name: 'categories',
       type: 'relationship',
       admin: {
         position: 'sidebar',
         sortOptions: 'title',
       },
+      required: true,
       hasMany: true,
       relationTo: 'categories',
     },

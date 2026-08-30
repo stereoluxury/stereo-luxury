@@ -45,6 +45,8 @@
   --breakpoint-2xl: 86rem;
   --font-mono: var(--font-geist-mono);
   --font-sans: var(--font-geist-sans);
+  --font-anton: var(--font-anton);
+  --font-archivo: var(--font-archivo);
 }
 
 @layer utilities {
@@ -93,14 +95,14 @@
   --card-foreground: oklch(14.5% 0 0deg);
   --popover: oklch(100% 0 0deg);
   --popover-foreground: oklch(14.5% 0 0deg);
-  --primary: oklch(20.5% 0 0deg);
+  --primary: oklch(62.08% 0.2516 28.72);
   --primary-foreground: oklch(98.5% 0 0deg);
   --secondary: oklch(97% 0 0deg);
-  --secondary-foreground: oklch(20.5% 0 0deg);
+  --secondary-foreground: oklch(62.08% 0.2516 28.72);
   --muted: oklch(97% 0 0deg);
   --muted-foreground: oklch(55.6% 0 0deg);
   --accent: oklch(97% 0 0deg);
-  --accent-foreground: oklch(20.5% 0 0deg);
+  --accent-foreground: oklch(62.08% 0.2516 28.72);
   --destructive: oklch(57.7% 0.245 27.325deg);
   --destructive-foreground: oklch(57.7% 0.245 27.325deg);
   --border: oklch(92.2% 0 0deg);
@@ -114,10 +116,10 @@
   --radius: 0.625rem;
   --sidebar: oklch(98.5% 0 0deg);
   --sidebar-foreground: oklch(14.5% 0 0deg);
-  --sidebar-primary: oklch(20.5% 0 0deg);
+  --sidebar-primary: oklch(62.08% 0.2516 28.72);
   --sidebar-primary-foreground: oklch(98.5% 0 0deg);
   --sidebar-accent: oklch(97% 0 0deg);
-  --sidebar-accent-foreground: oklch(20.5% 0 0deg);
+  --sidebar-accent-foreground: oklch(62.08% 0.2516 28.72);
   --sidebar-border: oklch(92.2% 0 0deg);
   --sidebar-ring: oklch(70.8% 0 0deg);
   --success: oklch(78% 0.08 200deg);
@@ -133,7 +135,7 @@
   --popover: oklch(14.5% 0 0deg);
   --popover-foreground: oklch(98.5% 0 0deg);
   --primary: oklch(98.5% 0 0deg);
-  --primary-foreground: oklch(20.5% 0 0deg);
+  --primary-foreground: oklch(62.08% 0.2516 28.72);
   --secondary: oklch(26.9% 0 0deg);
   --secondary-foreground: oklch(98.5% 0 0deg);
   --muted: oklch(26.9% 0 0deg);
@@ -150,7 +152,7 @@
   --chart-3: oklch(76.9% 0.188 70.08deg);
   --chart-4: oklch(62.7% 0.265 303.9deg);
   --chart-5: oklch(64.5% 0.246 16.439deg);
-  --sidebar: oklch(20.5% 0 0deg);
+  --sidebar: oklch(62.08% 0.2516 28.72);
   --sidebar-foreground: oklch(98.5% 0 0deg);
   --sidebar-primary: oklch(48.8% 0.243 264.376deg);
   --sidebar-primary-foreground: oklch(98.5% 0 0deg);
@@ -226,5 +228,38 @@ html[data-theme='light'] {
 a,
 input,
 button {
-  @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-50 dark:focus-visible:ring-neutral-600 dark:focus-visible:ring-offset-neutral-900;
+  @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-neutral-400 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-50 dark:focus-visible:ring-neutral-600 dark:focus-visible:ring-offset-neutral-900 font-archivo uppercase;
+}
+
+.site-shell {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+html[data-preloader='active'] .site-shell {
+  opacity: 0;
+  transform: translateY(0.75rem);
+}
+
+html[data-preloader='leaving'] .site-shell,
+html[data-preloader='done'] .site-shell {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-shell {
+    transition: none;
+    transform: none;
+  }
+
+  html[data-preloader='active'] .site-shell,
+  html[data-preloader='leaving'] .site-shell,
+  html[data-preloader='done'] .site-shell {
+    transform: none;
+  }
 }

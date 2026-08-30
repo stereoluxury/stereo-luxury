@@ -1,5 +1,5 @@
 'use client'
-import React, { useCallback } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,6 +19,9 @@ import { Button } from '@/components/ui/button'
 import { deepMergeSimple } from 'payload/shared'
 import { FormError } from '@/components/forms/FormError'
 import { FormItem } from '@/components/forms/FormItem'
+import { City, Country, State } from 'country-state-city'
+
+const NIGERIA_COUNTRY_CODE = 'NG'
 
 type AddressFormValues = {
   title?: string | null
@@ -50,20 +53,82 @@ export const AddressForm: React.FC<Props> = ({
   callback,
   skipSubmission,
 }) => {
+  const initialStateCode = useMemo(() => {
+    const initialState = initialData?.state
+    if (!initialState) return ''
+
+    const byCode = State.getStatesOfCountry(NIGERIA_COUNTRY_CODE).find(
+      (state) => state.isoCode.toLowerCase() === initialState.toLowerCase(),
+    )
+    if (byCode) return byCode.isoCode
+
+    const byName = State.getStatesOfCountry(NIGERIA_COUNTRY_CODE).find(
+      (state) => state.name.toLowerCase() === initialState.toLowerCase(),
+    )
+    return byName?.isoCode || ''
+  }, [initialData?.state])
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
+    watch,
   } = useForm<AddressFormValues>({
-    defaultValues: initialData,
+    defaultValues: {
+      ...initialData,
+      country: initialData?.country || NIGERIA_COUNTRY_CODE,
+      state: initialStateCode,
+    },
   })
 
   const { createAddress, updateAddress } = useAddresses()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const selectedCountry = watch('country') || NIGERIA_COUNTRY_CODE
+  const selectedState = watch('state') || ''
+  const selectedCity = watch('city') || ''
+
+  const nigeria = useMemo(() => Country.getCountryByCode(NIGERIA_COUNTRY_CODE), [])
+
+  const states = useMemo(() => {
+    return State.getStatesOfCountry(NIGERIA_COUNTRY_CODE)
+  }, [])
+
+  const cities = useMemo(() => {
+    if (!selectedState) return []
+    return City.getCitiesOfState(NIGERIA_COUNTRY_CODE, selectedState)
+  }, [selectedState])
+
+  useEffect(() => {
+    if (selectedCountry !== NIGERIA_COUNTRY_CODE) {
+      setValue('country', NIGERIA_COUNTRY_CODE, { shouldValidate: true })
+    }
+  }, [selectedCountry, setValue])
+
+  useEffect(() => {
+    if (selectedState && !states.some((state) => state.isoCode === selectedState)) {
+      setValue('state', '', { shouldValidate: true })
+      setValue('city', '', { shouldValidate: true })
+    }
+  }, [selectedState, setValue, states])
+
+  useEffect(() => {
+    if (selectedCity && !cities.some((city) => city.name === selectedCity)) {
+      setValue('city', '', { shouldValidate: true })
+    }
+  }, [selectedCity, cities, setValue])
 
   const onSubmit = useCallback(
     async (data: AddressFormValues) => {
-      const newData = deepMergeSimple(initialData || {}, data)
+      setIsLoading(true)
+      const selectedStateObj = states.find((state) => state.isoCode === data.state)
+
+      const newData = deepMergeSimple(initialData || {}, {
+        ...data,
+        country: NIGERIA_COUNTRY_CODE,
+        state: selectedStateObj?.name || data.state,
+      })
 
       if (!skipSubmission) {
         if (addressID) {
@@ -76,13 +141,15 @@ export const AddressForm: React.FC<Props> = ({
       if (callback) {
         callback(newData)
       }
+
+      setIsLoading(false)
     },
-    [initialData, skipSubmission, callback, addressID, updateAddress, createAddress],
+    [initialData, skipSubmission, callback, addressID, updateAddress, createAddress, states],
   )
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex flex-col gap-4 mb-8">
+      <div className="flex flex-col gap-4 mb-8 tracking-widest uppercase">
         <div className="flex flex-col md:flex-row gap-4">
           <FormItem className="shrink">
             <Label htmlFor="title">Title</Label>
@@ -94,12 +161,12 @@ export const AddressForm: React.FC<Props> = ({
               }}
               defaultValue={initialData?.title || ''}
             >
-              <SelectTrigger id="title">
+              <SelectTrigger className="rounded-none" id="title">
                 <SelectValue placeholder="Title" />
               </SelectTrigger>
               <SelectContent>
                 {titles.map((title) => (
-                  <SelectItem key={title} value={title}>
+                  <SelectItem className="uppercase tracking-widest" key={title} value={title}>
                     {title}
                   </SelectItem>
                 ))}
@@ -158,19 +225,59 @@ export const AddressForm: React.FC<Props> = ({
         </FormItem>
 
         <FormItem>
-          <Label htmlFor="city">City*</Label>
-          <Input
-            id="city"
-            autoComplete="address-level2"
-            {...register('city', { required: 'City is required.' })}
-          />
-          {errors.city && <FormError message={errors.city.message} />}
+          <Label htmlFor="state">State*</Label>
+          <Select
+            onValueChange={(value) => {
+              setValue('state', value, { shouldValidate: true })
+              setValue('city', '', { shouldValidate: true })
+            }}
+            value={selectedState}
+          >
+            <SelectTrigger id="state" className="w-full">
+              <SelectValue placeholder="Select state" />
+            </SelectTrigger>
+            <SelectContent>
+              {states.map((state) => (
+                <SelectItem
+                  className="uppercase tracking-widest"
+                  key={state.isoCode}
+                  value={state.isoCode}
+                >
+                  {state.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <input type="hidden" {...register('state', { required: 'State is required.' })} />
+          {errors.state && <FormError message={errors.state.message} />}
         </FormItem>
 
         <FormItem>
-          <Label htmlFor="state">State</Label>
-          <Input id="state" autoComplete="address-level1" {...register('state')} />
-          {errors.state && <FormError message={errors.state.message} />}
+          <Label htmlFor="city">City*</Label>
+          <Select
+            disabled={!selectedState}
+            onValueChange={(value) => {
+              setValue('city', value, { shouldValidate: true })
+            }}
+            value={selectedCity}
+          >
+            <SelectTrigger id="city" className="w-full">
+              <SelectValue placeholder={selectedState ? 'Select city' : 'Select state first'} />
+            </SelectTrigger>
+            <SelectContent>
+              {cities.map((city) => (
+                <SelectItem
+                  className="uppercase tracking-widest"
+                  key={`${city.stateCode}-${city.name}`}
+                  value={city.name}
+                >
+                  {city.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <input type="hidden" {...register('city', { required: 'City is required.' })} />
+          {errors.city && <FormError message={errors.city.message} />}
         </FormItem>
 
         <FormItem>
@@ -184,43 +291,36 @@ export const AddressForm: React.FC<Props> = ({
 
         <FormItem>
           <Label htmlFor="country">Country*</Label>
-
           <Select
-            {...register('country', {
-              required: 'Country is required.',
-            })}
             onValueChange={(value) => {
               setValue('country', value, { shouldValidate: true })
             }}
-            required
-            defaultValue={initialData?.country || ''}
+            value={NIGERIA_COUNTRY_CODE}
           >
             <SelectTrigger id="country" className="w-full">
               <SelectValue placeholder="Country" />
             </SelectTrigger>
             <SelectContent>
-              {supportedCountries.map((country) => {
-                const value = typeof country === 'string' ? country : country.value
-                const label =
-                  typeof country === 'string'
-                    ? country
-                    : typeof country.label === 'string'
-                      ? country.label
-                      : value
-
-                return (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                )
-              })}
+              <SelectItem className="uppercase tracking-widest" value={NIGERIA_COUNTRY_CODE}>
+                {nigeria?.name || 'Nigeria'}
+              </SelectItem>
             </SelectContent>
           </Select>
+          <input type="hidden" {...register('country', { required: 'Country is required.' })} />
           {errors.country && <FormError message={errors.country.message} />}
         </FormItem>
       </div>
 
-      <Button type="submit">Submit</Button>
+      <Button
+        className="w-full group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
+        type="submit"
+      >
+        <span
+          aria-hidden
+          className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+        />
+        Submit
+      </Button>
     </form>
   )
 }

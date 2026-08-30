@@ -16,11 +16,11 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import React, { useEffect, useMemo, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
+import { Product } from '@/payload-types'
 import { DeleteItemButton } from './DeleteItemButton'
 import { EditItemQuantityButton } from './EditItemQuantityButton'
 import { OpenCartButton } from './OpenCart'
-import { Button } from '@/components/ui/button'
-import { Product } from '@/payload-types'
 
 export function CartModal() {
   const { cart } = useCart()
@@ -36,7 +36,7 @@ export function CartModal() {
   const totalQuantity = useMemo(() => {
     if (!cart || !cart.items || !cart.items.length) return undefined
     return cart.items.reduce((quantity, item) => (item.quantity || 0) + quantity, 0)
-  }, [cart])
+  }, [cart])  
 
   return (
     <Sheet onOpenChange={setIsOpen} open={isOpen}>
@@ -46,13 +46,17 @@ export function CartModal() {
 
       <SheetContent className="flex flex-col">
         <SheetHeader>
-          <SheetTitle>My Cart</SheetTitle>
+          <SheetTitle className="font-anton md:text-3xl uppercase text-primary-foreground">
+            My Cart
+          </SheetTitle>
 
-          <SheetDescription>Manage your cart here, add items to view the total.</SheetDescription>
+          <SheetDescription className="tracking-widest text uppercase">
+            Manage your cart here, add items to view the total.
+          </SheetDescription>
         </SheetHeader>
 
         {!cart || cart?.items?.length === 0 ? (
-          <div className="text-center flex flex-col items-center gap-2">
+          <div className="text-center flex flex-col items-center gap-2 uppercase tracking-widest">
             <ShoppingCart className="h-16" />
             <p className="text-center text-2xl font-bold">Your cart is empty.</p>
           </div>
@@ -78,27 +82,31 @@ export function CartModal() {
                       : undefined
 
                   let image = firstGalleryImage || metaImage
-                  let price = product.priceInUSD
+                  let price = product.priceInNGN
 
                   const isVariant = Boolean(variant) && typeof variant === 'object'
 
                   if (isVariant) {
-                    price = variant?.priceInUSD
+                    price = variant?.priceInNGN
 
-                    const imageVariant = product.gallery?.find((item) => {
-                      if (!item.variantOption) return false
-                      const variantOptionID =
-                        typeof item.variantOption === 'object'
-                          ? item.variantOption.id
-                          : item.variantOption
+                    const imageVariant = product.gallery?.find(
+                      (item: NonNullable<Product['gallery']>[number]) => {
+                        if (!item.variantOption) return false
+                        const variantOptionID =
+                          typeof item.variantOption === 'object'
+                            ? item.variantOption.id
+                            : item.variantOption
 
-                      const hasMatch = variant?.options?.some((option) => {
-                        if (typeof option === 'object') return option.id === variantOptionID
-                        else return option === variantOptionID
-                      })
+                        const hasMatch = variant?.options?.some(
+                          (option: NonNullable<NonNullable<typeof variant>['options']>[number]) => {
+                            if (typeof option === 'object') return option.id === variantOptionID
+                            else return option === variantOptionID
+                          },
+                        )
 
-                      return hasMatch
-                    })
+                        return hasMatch
+                      },
+                    )
 
                     if (imageVariant && typeof imageVariant.image === 'object') {
                       image = imageVariant.image
@@ -108,14 +116,14 @@ export function CartModal() {
                   return (
                     <li className="flex w-full flex-col" key={i}>
                       <div className="relative flex w-full flex-row justify-between px-1 py-4">
-                        <div className="absolute z-40 -mt-2 ml-[55px]">
+                        <div className="absolute z-40 -mt-2 ml-13.75">
                           <DeleteItemButton item={item} />
                         </div>
                         <Link
                           className="z-30 flex flex-row space-x-4"
                           href={`/products/${(item.product as Product)?.slug}`}
                         >
-                          <div className="relative h-16 w-16 cursor-pointer overflow-hidden rounded-md border border-neutral-300 bg-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800">
+                          <div className="relative h-16 w-16 cursor-pointer overflow-hidden rounded-none border border-neutral-300 bg-neutral-300 dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800">
                             {image?.url && (
                               <Image
                                 alt={image?.alt || product?.title || ''}
@@ -130,12 +138,18 @@ export function CartModal() {
                           <div className="flex flex-1 flex-col text-base">
                             <span className="leading-tight">{product?.title}</span>
                             {isVariant && variant ? (
-                              <p className="text-sm text-neutral-500 dark:text-neutral-400 capitalize">
+                              <p className="text-xs text-primary-foreground uppercase tracking-widest">
                                 {variant.options
-                                  ?.map((option) => {
-                                    if (typeof option === 'object') return option.label
-                                    return null
-                                  })
+                                  ?.map(
+                                    (
+                                      option: NonNullable<
+                                        NonNullable<typeof variant>['options']
+                                      >[number],
+                                    ) => {
+                                      if (typeof option === 'object') return option.label
+                                      return null
+                                    },
+                                  )
                                   .join(', ')}
                               </p>
                             ) : null}
@@ -145,10 +159,10 @@ export function CartModal() {
                           {typeof price === 'number' && (
                             <Price
                               amount={price}
-                              className="flex justify-end space-y-2 text-right text-sm"
+                              className="flex justify-end space-y-2 text-right text-sm tracking-widest text-primary-foreground"
                             />
                           )}
-                          <div className="ml-auto flex h-9 flex-row items-center rounded-lg border">
+                          <div className="ml-auto flex h-9 flex-row items-center border">
                             <EditItemQuantityButton item={item} type="minus" />
                             <p className="w-6 text-center">
                               <span className="w-full text-sm">{item.quantity}</span>
@@ -166,17 +180,24 @@ export function CartModal() {
                 <div className="py-4 text-sm text-neutral-500 dark:text-neutral-400">
                   {typeof cart?.subtotal === 'number' && (
                     <div className="mb-3 flex items-center justify-between border-b border-neutral-200 pb-1 pt-1 dark:border-neutral-700">
-                      <p>Total</p>
+                      <p className="tracking-widest uppercase">Total</p>
                       <Price
                         amount={cart?.subtotal}
-                        className="text-right text-base text-black dark:text-white"
+                        className="text-right text-base dark:text-white tracking-widest text-primary-foreground"
                       />
                     </div>
                   )}
 
                   <Button asChild>
-                    <Link className="w-full" href="/checkout">
-                      Proceed to Checkout
+                    <Link
+                      className="w-full group relative isolate max-w-80 overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
+                      href="/checkout"
+                    >
+                      <span
+                        aria-hidden
+                        className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+                      />
+                      <span className="relative">Proceed to Checkout</span>
                     </Link>
                   </Button>
                 </div>

@@ -6,28 +6,22 @@ import { Price } from '@/components/Price'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuth } from '@/providers/Auth'
 import { useTheme } from '@/providers/Theme'
-import { Elements } from '@stripe/react-stripe-js'
-import { loadStripe } from '@stripe/stripe-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import React, { Suspense, useCallback, useEffect, useState } from 'react'
 
-import { cssVariables } from '@/cssVariables'
-import { CheckoutForm } from '@/components/forms/CheckoutForm'
-import { useAddresses, useCart, usePayments } from '@payloadcms/plugin-ecommerce/client/react'
-import { CheckoutAddresses } from '@/components/checkout/CheckoutAddresses'
-import { CreateAddressModal } from '@/components/addresses/CreateAddressModal'
-import { Address } from '@/payload-types'
-import { Checkbox } from '@/components/ui/checkbox'
 import { AddressItem } from '@/components/addresses/AddressItem'
+import { CreateAddressModal } from '@/components/addresses/CreateAddressModal'
+import { CheckoutAddresses } from '@/components/checkout/CheckoutAddresses'
 import { FormItem } from '@/components/forms/FormItem'
-import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/LoadingSpinner'
-
-const apiKey = `${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}`
-const stripe = loadStripe(apiKey)
+import { Checkbox } from '@/components/ui/checkbox'
+import { Address } from '@/payload-types'
+import { useAddresses, useCart, usePayments } from '@payloadcms/plugin-ecommerce/client/react'
+import { toast } from 'sonner'
 
 export const CheckoutPage: React.FC = () => {
   const { user } = useAuth()
@@ -42,6 +36,7 @@ export const CheckoutPage: React.FC = () => {
   const [emailEditable, setEmailEditable] = useState(true)
   const [paymentData, setPaymentData] = useState<null | Record<string, unknown>>(null)
   const { initiatePayment } = usePayments()
+  const [isRedirectingToPaystack, setIsRedirectingToPaystack] = useState(false)
   const { addresses } = useAddresses()
   const [shippingAddress, setShippingAddress] = useState<Partial<Address>>()
   const [billingAddress, setBillingAddress] = useState<Partial<Address>>()
@@ -76,8 +71,20 @@ export const CheckoutPage: React.FC = () => {
     }
   }, [])
 
+  // As soon as we have an authorization URL back from Paystack, send the
+  // user straight there instead of making them click a second button.
+  useEffect(() => {
+    const authorizationUrl = paymentData?.['authorizationUrl'] as string | undefined
+
+    if (authorizationUrl) {
+      window.open(authorizationUrl, '_blank', 'noopener,noreferrer')
+    }
+  }, [paymentData])
+
   const initiatePaymentIntent = useCallback(
     async (paymentID: string) => {
+      setIsRedirectingToPaystack(true)
+
       try {
         const paymentData = (await initiatePayment(paymentID, {
           additionalData: {
@@ -89,9 +96,13 @@ export const CheckoutPage: React.FC = () => {
 
         if (paymentData) {
           setPaymentData(paymentData)
+        } else {
+          setIsRedirectingToPaystack(false)
         }
       } catch (error) {
         const errorData = error instanceof Error ? JSON.parse(error.message) : {}
+        console.log(errorData, error);
+        
         let errorMessage = 'An error occurred while initiating payment.'
 
         if (errorData?.cause?.code === 'OutOfStock') {
@@ -100,12 +111,11 @@ export const CheckoutPage: React.FC = () => {
 
         setError(errorMessage)
         toast.error(errorMessage)
+        setIsRedirectingToPaystack(false)
       }
     },
     [billingAddress, billingAddressSameAsShipping, shippingAddress],
   )
-
-  if (!stripe) return null
 
   if (cartIsEmpty && isProcessingPayment) {
     return (
@@ -128,36 +138,45 @@ export const CheckoutPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-stretch justify-stretch my-8 md:flex-row grow gap-10 md:gap-6 lg:gap-8">
+    <div className="flex flex-col items-stretch justify-stretch my-8 md:flex-row grow gap-10 md:gap-6 lg:gap-8 uppercase">
       <div className="basis-full lg:basis-2/3 flex flex-col gap-8 justify-stretch">
-        <h2 className="font-medium text-3xl">Contact</h2>
+        <h2 className="font-medium text-3xl font-anton">Contact</h2>
         {!user && (
-          <div className=" bg-accent dark:bg-black rounded-lg p-4 w-full flex items-center">
+          <div className=" bg-accent dark:bg-black p-4 w-full flex items-center">
             <div className="prose dark:prose-invert">
-              <Button asChild className="no-underline text-inherit" variant="outline">
+              <Button
+                asChild
+                className="no-underline text-inherit rounded-none transition-all duration-300"
+                variant="outline"
+              >
                 <Link href="/login">Log in</Link>
               </Button>
-              <p className="mt-0">
+              <p className="mt-3">
                 <span className="mx-2">or</span>
-                <Link href="/create-account">create an account</Link>
+                <Link
+                  className="hover:text-primary-foreground transition-all duration-300"
+                  href="/create-account"
+                >
+                  create an account
+                </Link>
               </p>
             </div>
           </div>
         )}
         {user ? (
-          <div className="bg-accent dark:bg-card rounded-lg p-4 ">
+          <div className="bg-accent dark:bg-card tracking-widest p-4 ">
             <div>
               <p>{user.email}</p>{' '}
               <p>
                 Not you?{' '}
-                <Link className="underline" href="/logout">
+                <Link className="underline hover:text-primary-foreground" href="/logout">
                   Log out
                 </Link>
               </p>
             </div>
           </div>
         ) : (
-          <div className="bg-accent dark:bg-black rounded-lg p-4 ">
+          <div className="bg-accent dark:bg-black tracking-widest p-4 ">
             <div>
               <p className="mb-4">Enter your email to checkout as a guest.</p>
 
@@ -167,6 +186,7 @@ export const CheckoutPage: React.FC = () => {
                   disabled={!emailEditable}
                   id="email"
                   name="email"
+                  className="rounded-none"
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   type="email"
@@ -179,15 +199,20 @@ export const CheckoutPage: React.FC = () => {
                   e.preventDefault()
                   setEmailEditable(false)
                 }}
+                className="group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
                 variant="default"
               >
+                <span
+                  aria-hidden
+                  className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+                />
                 Continue as guest
               </Button>
             </div>
           </div>
         )}
 
-        <h2 className="font-medium text-3xl">Address</h2>
+        <h2 className="font-medium text-3xl font-anton">Address</h2>
 
         {billingAddress ? (
           <div>
@@ -196,6 +221,7 @@ export const CheckoutPage: React.FC = () => {
                 <Button
                   variant={'outline'}
                   disabled={Boolean(paymentData)}
+                  className="rounded-none"
                   onClick={(e) => {
                     e.preventDefault()
                     setBillingAddress(undefined)
@@ -219,16 +245,19 @@ export const CheckoutPage: React.FC = () => {
           />
         )}
 
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-center group">
           <Checkbox
             id="shippingTheSameAsBilling"
             checked={billingAddressSameAsShipping}
+            className="rounded-none group-hover:cursor-pointer"
             disabled={Boolean(paymentData || (!user && (!email || Boolean(emailEditable))))}
             onCheckedChange={(state) => {
               setBillingAddressSameAsShipping(state as boolean)
             }}
           />
-          <Label htmlFor="shippingTheSameAsBilling">Shipping is the same as billing</Label>
+          <Label className="group-hover:cursor-pointer" htmlFor="shippingTheSameAsBilling">
+            Shipping is the same as billing
+          </Label>
         </div>
 
         {!billingAddressSameAsShipping && (
@@ -270,16 +299,29 @@ export const CheckoutPage: React.FC = () => {
         )}
 
         {!paymentData && (
-          <Button
-            className="self-start"
-            disabled={!canGoToPayment}
-            onClick={(e) => {
-              e.preventDefault()
-              void initiatePaymentIntent('stripe')
-            }}
-          >
-            Go to payment
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  disabled={!canGoToPayment || isRedirectingToPaystack}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    void initiatePaymentIntent('paystack')
+                  }}
+                  className="self-start group relative isolate overflow-hidden rounded-none border-primary-foreground bg-primary-foreground py-5 font-medium tracking-widest text-white transition-colors duration-300 ease-out hover:text-black"
+                >
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
+                  />
+                  {isRedirectingToPaystack ? 'Processing payment' : 'Go to payment'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>You'll be redirected to Paystack to complete your payment securely.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
 
         {!paymentData?.['clientSecret'] && error && (
@@ -300,60 +342,31 @@ export const CheckoutPage: React.FC = () => {
 
         <Suspense fallback={<React.Fragment />}>
           {/* @ts-ignore */}
-          {paymentData && paymentData?.['clientSecret'] && (
+          {isRedirectingToPaystack && paymentData?.['authorizationUrl'] && (
             <div className="pb-16">
-              <h2 className="font-medium text-3xl">Payment</h2>
-              {error && <p>{`Error: ${error}`}</p>}
-              <Elements
-                options={{
-                  appearance: {
-                    theme: 'stripe',
-                    variables: {
-                      borderRadius: '6px',
-                      colorPrimary: '#858585',
-                      gridColumnSpacing: '20px',
-                      gridRowSpacing: '20px',
-                      colorBackground: theme === 'dark' ? '#0a0a0a' : cssVariables.colors.base0,
-                      colorDanger: cssVariables.colors.error500,
-                      colorDangerText: cssVariables.colors.error500,
-                      colorIcon:
-                        theme === 'dark' ? cssVariables.colors.base0 : cssVariables.colors.base1000,
-                      colorText: theme === 'dark' ? '#858585' : cssVariables.colors.base1000,
-                      colorTextPlaceholder: '#858585',
-                      fontFamily: 'Geist, sans-serif',
-                      fontSizeBase: '16px',
-                      fontWeightBold: '600',
-                      fontWeightNormal: '500',
-                      spacingUnit: '4px',
-                    },
-                  },
-                  clientSecret: paymentData['clientSecret'] as string,
-                }}
-                stripe={stripe}
-              >
-                <div className="flex flex-col gap-8">
-                  <CheckoutForm
-                    customerEmail={email}
-                    billingAddress={billingAddress}
-                    setProcessingPayment={setProcessingPayment}
-                  />
-                  <Button
-                    variant="ghost"
-                    className="self-start"
-                    onClick={() => setPaymentData(null)}
-                  >
-                    Cancel payment
-                  </Button>
-                </div>
-              </Elements>
+              <div className="flex flex-col gap-4 items-start">
+                <p className="text-sm text-primary/70">
+                  Redirecting you to Paystack to complete your payment securely…
+                </p>
+                {/* <Button
+                  variant="ghost"
+                  className="self-start"
+                  onClick={() => {
+                    setPaymentData(null)
+                    setIsRedirectingToPaystack(false)
+                  }}
+                >
+                  Cancel payment
+                </Button> */}
+              </div>
             </div>
           )}
         </Suspense>
       </div>
 
       {!cartIsEmpty && (
-        <div className="basis-full lg:basis-1/3 lg:pl-8 p-8 border-none bg-primary/5 flex flex-col gap-8 rounded-lg">
-          <h2 className="text-3xl font-medium">Your cart</h2>
+        <div className="basis-full lg:basis-1/3 lg:pl-8 p-8 border-none bg-primary/5 flex flex-col gap-8">
+          <h2 className="text-3xl font-medium font-anton">Your cart</h2>
           {cart?.items?.map((item, index) => {
             if (typeof item.product === 'object' && item.product) {
               const {
@@ -373,20 +386,24 @@ export const CheckoutPage: React.FC = () => {
               if (isVariant) {
                 price = variant?.priceInUSD
 
-                const imageVariant = product.gallery?.find((item) => {
-                  if (!item.variantOption) return false
-                  const variantOptionID =
-                    typeof item.variantOption === 'object'
-                      ? item.variantOption.id
-                      : item.variantOption
+                const imageVariant = product.gallery?.find(
+                  (item: NonNullable<typeof product.gallery>[number]) => {
+                    if (!item.variantOption) return false
+                    const variantOptionID =
+                      typeof item.variantOption === 'object'
+                        ? item.variantOption.id
+                        : item.variantOption
 
-                  const hasMatch = variant?.options?.some((option) => {
-                    if (typeof option === 'object') return option.id === variantOptionID
-                    else return option === variantOptionID
-                  })
+                    const hasMatch = variant?.options?.some(
+                      (option: NonNullable<NonNullable<typeof variant>['options']>[number]) => {
+                        if (typeof option === 'object') return option.id === variantOptionID
+                        else return option === variantOptionID
+                      },
+                    )
 
-                  return hasMatch
-                })
+                    return hasMatch
+                  },
+                )
 
                 if (imageVariant && typeof imageVariant.image !== 'string') {
                   image = imageVariant.image
@@ -394,11 +411,11 @@ export const CheckoutPage: React.FC = () => {
               }
 
               return (
-                <div className="flex items-start gap-4" key={index}>
-                  <div className="flex items-stretch justify-stretch h-20 w-20 p-2 rounded-lg border">
+                <div className="flex items-start gap-4 tracking-widest" key={index}>
+                  <div className="flex items-stretch justify-stretch h-20 w-20 p-2 border">
                     <div className="relative w-full h-full">
                       {image && typeof image !== 'string' && (
-                        <Media className="" fill imgClassName="rounded-lg" resource={image} />
+                        <Media className="" fill imgClassName="rounded-none" resource={image} />
                       )}
                     </div>
                   </div>
@@ -406,12 +423,16 @@ export const CheckoutPage: React.FC = () => {
                     <div className="flex flex-col gap-1">
                       <p className="font-medium text-lg">{title}</p>
                       {variant && typeof variant === 'object' && (
-                        <p className="text-sm font-mono text-primary/50 tracking-widest">
+                        <p className="text-sm font-archivo text-primary/50 tracking-widest">
                           {variant.options
-                            ?.map((option) => {
-                              if (typeof option === 'object') return option.label
-                              return null
-                            })
+                            ?.map(
+                              (
+                                option: NonNullable<NonNullable<typeof variant>['options']>[number],
+                              ) => {
+                                if (typeof option === 'object') return option.label
+                                return null
+                              },
+                            )
                             .join(', ')}
                         </p>
                       )}
@@ -428,10 +449,12 @@ export const CheckoutPage: React.FC = () => {
             }
             return null
           })}
-          <hr />
-          <div className="flex justify-between items-center gap-2">
-            <span className="uppercase">Total</span>{' '}
-            <Price className="text-3xl font-medium" amount={cart.subtotal || 0} />
+          <div className="flex flex-col gap-8 tracking-widest mt-auto">
+            <hr />
+            <div className="flex justify-between items-center gap-2">
+              <span className="uppercase">Total</span>{' '}
+              <Price className="text-3xl font-medium" amount={cart.subtotal || 0} />
+            </div>
           </div>
         </div>
       )}

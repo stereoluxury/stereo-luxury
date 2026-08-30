@@ -1,0 +1,103 @@
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: oklch(92% 0.025 88deg);
+  background-color: black;
+  isolation: isolate;
+  pointer-events: auto;
+  clip-path: inset(0% 0% 0% 0%);
+}
+
+.content {
+  display: grid;
+  width: min(86vw, 44rem);
+  place-items: center;
+}
+
+.logoMask {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.glitchContainer {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.logo {
+  width: clamp(10.25rem, 20vw, 14rem) !important;
+  max-width: none !important;
+  height: clamp(10.25rem, 20vw, 14rem) !important;
+  border-radius: 0 !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 1.2rem 2.4rem rgb(0 0 0 / 0.6));
+}
+
+.logoBase {
+  display: grid;
+  place-items: center;
+  opacity: 0;
+}
+
+.glitchLayer,
+.glitchLayer2 {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.glitchLayer .logo {
+  filter: drop-shadow(0 0 8px rgba(255, 60, 20, 0.85)) hue-rotate(25deg) !important;
+}
+
+.glitchLayer2 .logo {
+  filter: drop-shadow(0 0 8px rgba(255, 140, 0, 0.75)) hue-rotate(-20deg) !important;
+}
+
+.progressPercent {
+  position: absolute;
+  right: clamp(1rem, 2.5vw, 2rem);
+  bottom: clamp(0.875rem, 2vw, 1.5rem);
+  z-index: 2;
+  color: #fa0a0e;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: clamp(0.75rem, 1.1vw, 0.9rem);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.progressTrack {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(255, 0, 0, 0.18);
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(120, 0, 0), rgb(250, 10, 14), rgb(255, 75, 75));
+  box-shadow: 0 0 18px rgba(255, 0, 0, 0.45);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+@media (width <= 40rem) {
+  .content {
+    max-width: 19rem;
+  }
+}

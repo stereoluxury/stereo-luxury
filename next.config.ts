@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
     ],
     qualities: [90, 100],
     remotePatterns: [
-      ...[NEXT_PUBLIC_SERVER_URL /* 'https://example.com' */].map((item) => {
+      ...[NEXT_PUBLIC_SERVER_URL, 'https://res.cloudinary.com'].map((item) => {
         const url = new URL(item)
 
         return {

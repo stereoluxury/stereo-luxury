@@ -5,7 +5,7 @@ import { cn } from '@/utilities/cn'
 import Link from 'next/link'
 import React from 'react'
 
-type CMSLinkType = {
+export type CMSLinkType = {
   appearance?: 'inline' | ButtonProps['variant']
   children?: React.ReactNode
   className?: string

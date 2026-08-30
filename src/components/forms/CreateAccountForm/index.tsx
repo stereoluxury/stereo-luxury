@@ -72,12 +72,9 @@ export const CreateAccountForm: React.FC = () => {
   )
 
   return (
-    <form className="max-w-lg py-4" onSubmit={handleSubmit(onSubmit)}>
+    <form className="max-w-lg py-4 tracking-widest" onSubmit={handleSubmit(onSubmit)}>
       <div className="prose dark:prose-invert mb-6">
-        <p>
-          {`This is where new customers can signup and create a new account. To manage all users, `}
-          <Link href="/admin/collections/users">login to the admin dashboard</Link>.
-        </p>
+        <p>Enter your details to create an account</p>
       </div>
 
       <Message error={error} />
@@ -122,7 +119,7 @@ export const CreateAccountForm: React.FC = () => {
           {errors.passwordConfirm && <FormError message={errors.passwordConfirm.message} />}
         </FormItem>
       </div>
-      <Button disabled={loading} type="submit" variant="default">
+      <Button className="rounded-none" disabled={loading} type="submit" variant="default">
         {loading ? 'Processing' : 'Create Account'}
       </Button>
 

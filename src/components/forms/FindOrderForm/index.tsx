@@ -60,8 +60,8 @@ export const FindOrderForm: React.FC<Props> = ({ initialEmail }) => {
   if (success) {
     return (
       <Fragment>
-        <h1 className="text-xl mb-4">Check your email</h1>
-        <div className="prose dark:prose-invert">
+        <h1 className="text-xl mb-4 font-anton">Check your email</h1>
+        <div className="prose dark:prose-invert font-archivo uppercase tracking-widest">
           <p>
             {`If an order exists with the provided email and order ID, we've sent you an email with a link to view your order details.`}
           </p>
@@ -72,13 +72,15 @@ export const FindOrderForm: React.FC<Props> = ({ initialEmail }) => {
 
   return (
     <Fragment>
-      <h1 className="text-xl mb-4">Find my order</h1>
-      <div className="prose dark:prose-invert mb-8">
+      <h1 className="text-xl md:text-3xl mb-4 font-anton uppercase text-primary-foreground">
+        Find my order
+      </h1>
+      <div className="prose dark:prose-invert mb-8 uppercase tracking-widest">
         <p>{`Please enter your email and order ID below. We'll send you a link to view your order.`}</p>
       </div>
       <form className="max-w-lg flex flex-col gap-8" onSubmit={handleSubmit(onSubmit)}>
         <FormItem>
-          <Label htmlFor="email" className="mb-2">
+          <Label htmlFor="email" className="mb-2 uppercase tracking-widest">
             Email address
           </Label>
           <Input
@@ -89,7 +91,7 @@ export const FindOrderForm: React.FC<Props> = ({ initialEmail }) => {
           {errors.email && <FormError message={errors.email.message} />}
         </FormItem>
         <FormItem>
-          <Label htmlFor="orderID" className="mb-2">
+          <Label htmlFor="orderID" className="mb-2 uppercase tracking-widest">
             Order ID
           </Label>
           <Input
@@ -102,7 +104,12 @@ export const FindOrderForm: React.FC<Props> = ({ initialEmail }) => {
           {errors.orderID && <FormError message={errors.orderID.message} />}
         </FormItem>
         {submitError && <FormError message={submitError} />}
-        <Button type="submit" className="self-start" variant="default" disabled={isSubmitting}>
+        <Button
+          type="submit"
+          className="self-start rounded-none text-white bg-primary-foreground hover:bg-primary-foreground/50"
+          variant="default"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? 'Sending...' : 'Find order'}
         </Button>
       </form>

@@ -2,6 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { adminOnly } from '@/access/adminOnly'
 import { link } from '@/fields/link'
+import { revalidateTag } from 'next/cache'
 
 export const Footer: GlobalConfig = {
   slug: 'footer',
@@ -21,4 +22,11 @@ export const Footer: GlobalConfig = {
       maxRows: 6,
     },
   ],
+  hooks: {
+    afterChange: [
+      async () => {
+        revalidateTag('global_footer', 'max')
+      },
+    ],
+  },
 }
