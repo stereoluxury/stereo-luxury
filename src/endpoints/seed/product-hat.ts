@@ -1,5 +1,4 @@
-import type { Category, Product, VariantOption, VariantType } from '@/payload-types'
-import type { Media } from '@/payload-types'
+import type { Category, Media, Product, VariantType } from '@/payload-types'
 import { RequiredDataFromCollectionSlug } from 'payload'
 
 type ProductArgs = {
