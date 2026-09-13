@@ -94,8 +94,12 @@ export const ArchiveBlock: React.FC<ArchiveBlockProps & { id?: string }> = async
   return (
     <div className="my-16" id={`block-${id}`}>
       {introContent && (
-        <div className="container mb-16 flex items-center justify-between">
-          <RichText className="ms-0 max-w-3xl" data={introContent} enableGutter={false} />
+        <div className="container mb-16 flex items-center justify-between uppercase">
+          <RichText
+            className="ms-0 max-w-3xl [&>h3]:font-anton [&>h3]:md:text-3xl [&>h3]:text-primary-foreground [&>p]:tracking-widest"
+            data={introContent}
+            enableGutter={false}
+          />
           {viewMoreLink && (
             <Link href={viewMoreLink}>
               <Button variant="ghost" className="mb-4">

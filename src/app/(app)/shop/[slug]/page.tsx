@@ -6,7 +6,7 @@ import { Grid } from '@/components/Grid'
 import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
 
-const VALID_GENDERS = ['men', 'women', 'unisex']
+const VALID_GENDERS = ['men', 'women', 'unisex', "all"]
 
 type Props = {
   params: Promise<{ slug: string }>

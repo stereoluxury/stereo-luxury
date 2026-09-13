@@ -11,11 +11,13 @@ import React, { Fragment } from 'react'
 import { FeaturesBlock } from './FeaturesBlock/Component'
 
 import type { Page } from '../payload-types'
+import { MediaCarouselBlockComponent } from './MediaCarouselBlock/Components'
 
 const blockComponents = {
   archive: ArchiveBlock,
   banner: BannerBlock,
   carousel: CarouselBlock,
+  mediaCarousel: MediaCarouselBlockComponent,
   content: ContentBlock,
   cta: CallToActionBlock,
   formBlock: FormBlock,

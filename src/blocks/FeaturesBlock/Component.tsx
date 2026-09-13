@@ -4,10 +4,6 @@ import React from 'react'
 
 const features = [
   {
-    icon: ShieldCheck,
-    title: 'Authentic Watches',
-  },
-  {
     icon: Truck,
     title: 'Nationwide Delivery',
   },
@@ -23,9 +19,9 @@ const features = [
 
 export const FeaturesBlock: React.FC<FeaturesBlockProps> = () => {
   return (
-    <div className="container flex items-center justify-center py-16 bg-background">
+    <div className="container flex items-center justify-center py-16 bg-background tracking-widest">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-8 text-center uppercase">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 text-center uppercase">
           {features.map((feature) => (
             <div
               key={feature.title}
@@ -34,7 +30,7 @@ export const FeaturesBlock: React.FC<FeaturesBlockProps> = () => {
               <div className="mb-4 h-12 w-12 flex items-center justify-center bg-muted rounded-full shadow-sm">
                 <feature.icon className="size-6" />
               </div>
-              <span className="text-sm font-medium tracking-wide">{feature.title}</span>
+              <span className="text-sm font-medium">{feature.title}</span>
             </div>
           ))}
         </div>

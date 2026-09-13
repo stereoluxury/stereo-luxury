@@ -60,7 +60,7 @@ export function HeaderClient({ header }: Props) {
                             href={`/shop/${item.megaMenu.rootCategory.slug}`}
                             onClick={(e) => e.stopPropagation()}
                             className={cn(
-                              'relative h-auto navLink group inline-flex items-center text-base! bg-transparent text-primary/50 hover:text-primary-foreground [&.active]:text-primary-foreground p-0! pt-2! pb-6! focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-transparent focus:bg-transparent focus:text-primary-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-primary-foreground data-[state=open]:bg-transparent/50 data-[state=open]:hover:bg-transparent data-[state=open]:focus:bg-transparent transition-all duration-300 tracking-widest font-medium',
+                              'relative h-auto navLink group inline-flex items-center text-xs!  md:text-base! bg-transparent text-primary/50 hover:text-primary-foreground [&.active]:text-primary-foreground p-0! pt-2! pb-6! focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-transparent focus:bg-transparent focus:text-primary-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-primary-foreground data-[state=open]:bg-transparent/50 data-[state=open]:hover:bg-transparent data-[state=open]:focus:bg-transparent transition-all duration-300 tracking-widest font-medium',
                               {
                                 active: pathname.includes(
                                   `/shop/${item.megaMenu.rootCategory.slug}`,
@@ -85,7 +85,7 @@ export function HeaderClient({ header }: Props) {
                           <CMSLink
                             {...item.link}
                             size="clear"
-                            className={cn('relative navLink text-base', {
+                            className={cn('relative navLink text-xs md:text-base', {
                               active:
                                 item.link.url && item.link.url !== '/'
                                   ? pathname.includes(item.link.url)
