@@ -23,7 +23,7 @@ export default async function AccountPage() {
 
 
   if (user?.roles?.includes('admin')) {
-    redirect('/admin/accounts')
+    redirect('/admin/account')
   }
 
   if (!user) {

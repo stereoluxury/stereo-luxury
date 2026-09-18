@@ -17,7 +17,7 @@ export default async function Orders() {
   let orders: Order[] | null = null
 
   if (user?.roles?.includes('admin')) {
-    redirect('/admin/accounts')
+    redirect('/admin/account')
   }
 
   if (!user) {
