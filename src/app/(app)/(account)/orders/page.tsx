@@ -16,10 +16,6 @@ export default async function Orders() {
 
   let orders: Order[] | null = null
 
-  if (user?.roles?.includes('admin')) {
-    redirect('/admin/account')
-  }
-
   if (!user) {
     redirect(`/login?warning=${encodeURIComponent('Please login to access your orders.')}`)
   }

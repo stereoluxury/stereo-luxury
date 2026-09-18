@@ -14,17 +14,9 @@ import { redirect } from 'next/navigation'
 export default async function AccountPage() {
   const headers = await getHeaders()
   const payload = await getPayload({ config: configPromise })
-  const { user } = await payload.auth({ headers })
-
-  console.log(user);
-  
+  const { user } = await payload.auth({ headers })  
 
   let orders: Order[] | null = null
-
-
-  if (user?.roles?.includes('admin')) {
-    redirect('/admin/account')
-  }
 
   if (!user) {
     redirect(

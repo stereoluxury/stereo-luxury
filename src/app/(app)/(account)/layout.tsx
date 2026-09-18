@@ -5,11 +5,16 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { RenderParams } from '@/components/RenderParams'
 import { AccountNav } from '@/components/AccountNav'
+import { redirect } from 'next/navigation'
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const headers = await getHeaders()
   const payload = await getPayload({ config: configPromise })
   const { user } = await payload.auth({ headers })
+
+  if (user && user.roles?.includes('admin')) {
+    redirect('/admin/account')
+  }
 
   return (
     <div>
