@@ -16,7 +16,15 @@ export default async function AccountPage() {
   const payload = await getPayload({ config: configPromise })
   const { user } = await payload.auth({ headers })
 
+  console.log(user);
+  
+
   let orders: Order[] | null = null
+
+
+  if (user?.roles?.includes('admin')) {
+    redirect('/admin/accounts')
+  }
 
   if (!user) {
     redirect(
