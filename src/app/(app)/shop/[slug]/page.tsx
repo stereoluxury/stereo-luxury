@@ -6,7 +6,8 @@ import { Grid } from '@/components/Grid'
 import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
 
-const VALID_GENDERS = ['men', 'women', 'unisex', "all"]
+const VALID_GENDERS = ['men', 'women', 'unisex', 'new']
+const NEW_ARRIVALS_CATEGORY_SLUG = 'new'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -19,9 +20,25 @@ export default async function GenderShopPage({ params, searchParams }: Props) {
 
   if (!VALID_GENDERS.includes(gender)) notFound()
 
-  const selectedCategoryIds = await resolveSelectedCategoryIds(category)
+  const isNewArrivals = gender === 'new'
 
   const payload = await getPayload({ config: configPromise })
+
+  const selectedCategoryIds = await resolveSelectedCategoryIds(category)
+
+  let newArrivalsCategoryId: string | number | undefined
+  if (isNewArrivals) {
+    const newCategory = await payload.find({
+      collection: 'categories',
+      where: { slug: { equals: NEW_ARRIVALS_CATEGORY_SLUG } },
+      limit: 1,
+      select: { title: true },
+    })
+    newArrivalsCategoryId = newCategory.docs[0]?.id
+  }
+
+  // men/women pages also include unisex products; unisex page stays unisex-only
+  const genderValues = gender === 'men' || gender === 'women' ? [gender, 'unisex'] : [gender]
 
   const products = await payload.find({
     collection: 'products',
@@ -39,11 +56,15 @@ export default async function GenderShopPage({ params, searchParams }: Props) {
       enableVariants: true,
       variantTypes: true,
     },
-    sort: sort ? String(sort) : 'title',
+    sort: sort ? String(sort) : isNewArrivals ? '-createdAt' : 'title',
     where: {
       and: [
         { _status: { equals: 'published' } },
-        { gender: { equals: gender } },
+        ...(isNewArrivals
+          ? newArrivalsCategoryId
+            ? [{ categories: { in: [newArrivalsCategoryId] } }]
+            : [{ id: { equals: -1 } }]
+          : [{ gender: { in: genderValues } }]),
         ...(selectedCategoryIds ? [{ categories: { in: selectedCategoryIds } }] : []),
         ...(searchValue
           ? [
@@ -60,7 +81,9 @@ export default async function GenderShopPage({ params, searchParams }: Props) {
 
   return (
     <div className="uppercase tracking-widest">
-      <h1 className="text-2xl mb-4 capitalize">{gender}</h1>
+      <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
+        {isNewArrivals ? 'New Arrivals' : gender}
+      </h1>
 
       {searchValue ? (
         <p className="mb-4">

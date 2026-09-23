@@ -17,6 +17,8 @@ import { getPayload, Where } from 'payload'
 import React from 'react'
 import { RichText } from '@/components/RichText'
 
+const NEW_ARRIVALS_CATEGORY_SLUG = 'new'
+
 export const ArchiveBlock: React.FC<ArchiveBlockProps & { id?: string }> = async (props) => {
   const {
     id,
@@ -38,6 +40,7 @@ export const ArchiveBlock: React.FC<ArchiveBlockProps & { id?: string }> = async
     const flattenedCategories = categories?.map((c) => (typeof c === 'object' ? c.id : c))
 
     const where: Where = {}
+    let sort: string | undefined
 
     if (flattenedCategories?.length) {
       where.categories = { in: flattenedCategories }
@@ -48,17 +51,30 @@ export const ArchiveBlock: React.FC<ArchiveBlockProps & { id?: string }> = async
 
       if (filterType === 'featured') where.isFeatured = { equals: true }
       if (filterType === 'onSale') where.isOnSale = { equals: true }
-      if (filterType === 'new-arrival')
-        where.createdAt = {
-          greater_than: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30),
-        }
+
+      if (filterType === 'new-arrival') {
+        const newCategory = await payload.find({
+          collection: 'categories',
+          where: { slug: { equals: NEW_ARRIVALS_CATEGORY_SLUG } },
+          limit: 1,
+          select: { title: true },
+        })
+        const newArrivalsCategoryId = newCategory.docs[0]?.id
+
+        // Merge with (don't overwrite) any block-level category filter already set above
+        where.categories = newArrivalsCategoryId ? { in: [newArrivalsCategoryId] } : { in: [-1] } // no "new" category found — show nothing rather than everything
+
+        sort = '-createdAt'
+      }
     }
+
     const fetchedDocs = await payload.find({
       collection: relationTo || 'posts',
       draft: false,
       overrideAccess: false,
       depth: 1,
       limit,
+      sort,
       where: Object.keys(where).length
         ? { and: [where, { _status: { equals: 'published' } }] }
         : { _status: { equals: 'published' } },
@@ -76,7 +92,7 @@ export const ArchiveBlock: React.FC<ArchiveBlockProps & { id?: string }> = async
   if (relationTo === 'products') {
     switch (filterType) {
       case 'new-arrival':
-        viewMoreLink = '/shop/new-arrival'
+        viewMoreLink = '/shop/new'
         break
       case 'onSale':
         viewMoreLink = '/shop/on-sale'

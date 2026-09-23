@@ -10,10 +10,7 @@ type Props = {
 }
 
 export default async function ShopLayout({ children, params }: Props) {
-  const { slug: gender, categories } = await params
-
-  console.log(gender, categories);
-  
+  const { slug: gender, categories } = await params  
 
   return (
     <Suspense fallback={null}>
