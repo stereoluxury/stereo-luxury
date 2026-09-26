@@ -1,11 +1,11 @@
 import configPromise from '@payload-config'
-import clsx from 'clsx'
 import { getPayload } from 'payload'
-import { Suspense } from 'react'
+import clsx from 'clsx'
+import React, { Suspense } from 'react'
 
+import { CategoryItem } from './Categories.client'
 import { AccordionContent, AccordionTrigger } from '@/components/ui/accordion'
 import { buildCategoryTree, findCategoryByPath, getAllCategoriesFlat } from '@/utilities/categories'
-import { CategoryItem } from './Categories.client'
 
 type Props = {
   audience: string
@@ -23,7 +23,6 @@ async function CategoryList({ audience, categorySegments }: Props) {
     // the audience prefix (e.g. ['tops'] from /men/tops), matching the
     // plugin's taxonomy-relative breadcrumb URLs.
     const current = findCategoryByPath(allCategories, categorySegments)
-    console.log(current, "current");
     
     if (!current) return null
     children = childrenByParent.get(String(current.id)) ?? []

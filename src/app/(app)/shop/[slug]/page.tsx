@@ -5,7 +5,6 @@ import { resolveSelectedCategoryIds } from '@/utilities/categories'
 import { Grid } from '@/components/Grid'
 import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
-import { ShopFilters } from '@/components/layout/search/ShopFilters'
 
 const VALID_SLUGS = ['men', 'women', 'new'] as const
 type ValidSlug = (typeof VALID_SLUGS)[number]
@@ -84,44 +83,38 @@ export default async function AudienceShopPage({ params, searchParams }: Props) 
   const resultsText = products.docs.length > 1 ? 'results' : 'result'
 
   return (
-    <ShopFilters>
-      <div className="uppercase tracking-widest">
-        <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
-          {isNewArrivals ? 'New Arrivals' : slug}
-        </h1>
+    <div className="uppercase tracking-widest">
+      <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
+        {isNewArrivals ? 'New Arrivals' : slug}
+      </h1>
 
-        {searchValue ? (
-          <p className="mb-4">
-            {products.docs.length === 0
-              ? 'There are no products that match '
-              : `Showing ${products.docs.length} ${resultsText} for `}
-            <span className="font-bold">&quot;{searchValue}&quot;</span>
-          </p>
-        ) : null}
+      {searchValue ? (
+        <p className="mb-4">
+          {products.docs.length === 0
+            ? 'There are no products that match '
+            : `Showing ${products.docs.length} ${resultsText} for `}
+          <span className="font-bold">&quot;{searchValue}&quot;</span>
+        </p>
+      ) : null}
 
-        {products.docs.length === 0 && !searchValue && (
-          <p className="mb-4">No products found. Please try different filters.</p>
-        )}
+      {products.docs.length === 0 && !searchValue && (
+        <p className="mb-4">No products found. Please try different filters.</p>
+      )}
 
-        {products.docs.length > 0 && (
-          <>
-            <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {products.docs.map((product) => (
-                <ProductGridItem key={product.id} product={product} />
-              ))}
-            </Grid>
+      {products.docs.length > 0 && (
+        <>
+          <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.docs.map((product) => (
+              <ProductGridItem key={product.id} product={product} />
+            ))}
+          </Grid>
 
-            {products.totalPages > 1 && (
-              <Pagination
-                page={products.page ?? 1}
-                totalPages={products.totalPages}
-                useQueryParams
-              />
-            )}
-          </>
-        )}
-      </div>
-    </ShopFilters>
+          {products.totalPages > 1 && (
+            <Pagination page={products.page ?? 1} totalPages={products.totalPages} useQueryParams />
+          )}
+        </>
+      )}
+    </div>
   )
 }
 
