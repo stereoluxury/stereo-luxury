@@ -43,12 +43,17 @@ export const Header: GlobalConfig = {
           fields: [
             { name: 'label', type: 'text', required: true }, // "Men" / "Women"
             {
-              name: 'rootCategory',
-              type: 'relationship',
-              relationTo: 'categories',
-              filterOptions: { parent: { exists: false } },
+              name: 'audience',
+              type: 'select',
+              options: [
+                { label: 'Men', value: 'men' },
+                { label: 'Women', value: 'women' },
+              ],
               required: true,
-              admin: { description: 'Which top-level category this tab points to' },
+              admin: {
+                description:
+                  'Storefront section this tab points to. Prepended to every category URL in the flyout.',
+              },
             },
             {
               name: 'featured',
@@ -58,7 +63,15 @@ export const Header: GlobalConfig = {
               fields: [
                 { name: 'title', type: 'text', required: true },
                 { name: 'image', type: 'upload', relationTo: 'media', required: true },
-                { name: 'link', type: 'relationship', relationTo: 'categories', required: true },
+                {
+                  name: 'link',
+                  type: 'relationship',
+                  relationTo: 'categories',
+                  required: true,
+                  admin: {
+                    description: 'Resolves to /{audience}/{categoryPath}',
+                  },
+                },
               ],
             },
             {

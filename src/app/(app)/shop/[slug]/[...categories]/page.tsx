@@ -10,17 +10,23 @@ import { Grid } from '@/components/Grid'
 import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
 
+const VALID_AUDIENCES = ['men', 'women'] as const
+type Audience = (typeof VALID_AUDIENCES)[number]
+
 type Props = {
   params: Promise<{ slug: string; categories: string[] }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export default async function CategoryShopPage({ params, searchParams }: Props) {
-  const { slug: gender, categories: segments } = await params
+  const { slug: audience, categories: segments } = await params
   const { q: searchValue, sort, category, page } = await searchParams
 
-  const currentCategory = await getCategoryByFullPath([gender, ...segments])
-  if (!currentCategory || currentCategory.gender !== gender) notFound()
+  if (!VALID_AUDIENCES.includes(audience as Audience)) notFound()
+
+  const currentCategory = await getCategoryByFullPath(segments)
+
+  if (!currentCategory) notFound()
 
   const pathCategoryIds = await getCategoryAndDescendantIds(currentCategory.id)
 
@@ -53,7 +59,7 @@ export default async function CategoryShopPage({ params, searchParams }: Props) 
     where: {
       and: [
         { _status: { equals: 'published' } },
-        { gender: { equals: gender } },
+        { audiences: { in: [audience] } },
         { categories: { in: effectiveCategoryIds } },
         ...(searchValue
           ? [
@@ -67,11 +73,23 @@ export default async function CategoryShopPage({ params, searchParams }: Props) 
   })
 
   const resultsText = products.docs.length > 1 ? 'results' : 'result'
+  const audienceLabel = audience === 'men' ? 'Men' : 'Women'
+
+  // Build breadcrumbs with the audience prefix applied at render time.
+  // nestedDocsPlugin gives us category-relative URLs (/tops, /tops/t-shirts);
+  // we prepend /{audience} so links land on the right storefront section.
+  const breadcrumbs = [
+    { url: `/${audience}`, label: audienceLabel },
+    ...(currentCategory.breadcrumbs ?? []).map((b) => ({
+      url: `/${audience}${b.url}`,
+      label: b.label,
+    })),
+  ]
 
   return (
     <div className="uppercase tracking-widest">
       <nav className="mb-2 text-sm text-muted-foreground normal-case">
-        {currentCategory.breadcrumbs?.map((b, i) => (
+        {breadcrumbs.map((b, i) => (
           <span key={b.url}>
             {i > 0 && ' / '}
             {b.label}
@@ -112,17 +130,22 @@ export default async function CategoryShopPage({ params, searchParams }: Props) 
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: (await import('@payload-config')).default })
+
   const { docs } = await payload.find({
     collection: 'categories',
-    where: { parent: { exists: true } },
-    depth: 1,
+    depth: 0,
     limit: 1000,
   })
 
-  return docs
-    .filter((c) => c.breadcrumbs?.length)
-    .map((c) => {
-      const parts = c.breadcrumbs!.at(-1)!.url!.split('/').filter(Boolean)
-      return { slug: parts[0], categories: parts.slice(1) }
-    })
+  // Cross-product every category path with every audience.
+  // Top-level categories are now reachable (e.g. /men/tops), so we no longer
+  // filter to only categories that have a parent.
+  return VALID_AUDIENCES.flatMap((audience) =>
+    docs
+      .filter((c) => typeof c.slug === 'string' && c.slug.length > 0)
+      .map((c) => ({
+        slug: audience,
+        categories: (c.slug as string).split('/').filter(Boolean),
+      })),
+  )
 }

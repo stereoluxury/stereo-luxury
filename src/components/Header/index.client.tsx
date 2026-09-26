@@ -23,6 +23,7 @@ import {
 } from '../ui/navigation-menu'
 import { NavItem } from './types'
 import { ChevronDown } from 'lucide-react'
+import { audienceUrl, categoryUrl } from '@/utilities/categoryUrl'
 
 type Props = {
   header: Header
@@ -57,14 +58,12 @@ export function HeaderClient({ header }: Props) {
                       <NavigationMenuItem className="" key={item.id}>
                         <NavigationMenuTrigger asChild>
                           <Link
-                            href={`/shop/${item.megaMenu.rootCategory.slug}`}
+                            href={audienceUrl(item.megaMenu.audience)}
                             onClick={(e) => e.stopPropagation()}
                             className={cn(
-                              'relative h-auto navLink group inline-flex items-center text-xs!  md:text-base! bg-transparent text-primary/50 hover:text-primary-foreground [&.active]:text-primary-foreground p-0! pt-2! pb-6! focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-transparent focus:bg-transparent focus:text-primary-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-primary-foreground data-[state=open]:bg-transparent/50 data-[state=open]:hover:bg-transparent data-[state=open]:focus:bg-transparent transition-all duration-300 tracking-widest font-medium',
+                              'relative h-auto navLink group inline-flex items-center text-xs! md:text-base! bg-transparent text-primary/50 hover:text-primary-foreground [&.active]:text-primary-foreground p-0! pt-2! pb-6! focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-transparent focus:bg-transparent focus:text-primary-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[state=open]:text-primary-foreground data-[state=open]:bg-transparent/50 data-[state=open]:hover:bg-transparent data-[state=open]:focus:bg-transparent transition-all duration-300 tracking-widest font-medium',
                               {
-                                active: pathname.includes(
-                                  `/shop/${item.megaMenu.rootCategory.slug}`,
-                                ),
+                                active: pathname.startsWith(audienceUrl(item.megaMenu.audience)),
                               },
                             )}
                           >
@@ -124,7 +123,7 @@ function MegaMenuPanel({
 }: {
   megaMenu: Extract<NavItem, { type: 'megaMenu' }>['megaMenu']
 }) {
-  const rootSlug = megaMenu.rootCategory.slug
+  const { audience } = megaMenu
 
   return (
     <div className="w-screen mx-auto max-w-6xl px-4 py-10 uppercase tracking-widest sm:px-6 lg:px-8">
@@ -135,7 +134,7 @@ function MegaMenuPanel({
             {megaMenu.featured.map((f) => (
               <NavigationMenuLink asChild key={f.title}>
                 <Link
-                  href={`/shop/${rootSlug}/${f.link.slug}`}
+                  href={categoryUrl(audience, f.link)}
                   className="group relative text-base sm:text-sm"
                 >
                   <img
@@ -160,13 +159,13 @@ function MegaMenuPanel({
               <p className="font-medium text-foreground">{section.label}</p>
               <ul className="mt-6 space-y-4">
                 {section.categories.map((cat) => (
-                  <li key={cat.id}>
+                  <li key={typeof cat === 'object' ? cat.id : cat}>
                     <NavigationMenuLink asChild>
                       <Link
-                        href={`/shop/${rootSlug}/${cat.slug}`}
+                        href={categoryUrl(audience, cat)}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        {cat.title}
+                        {typeof cat === 'object' ? cat.title : ''}
                       </Link>
                     </NavigationMenuLink>
                   </li>

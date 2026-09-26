@@ -1,44 +1,49 @@
 import configPromise from '@payload-config'
-import { getPayload } from 'payload'
 import clsx from 'clsx'
-import React, { Suspense } from 'react'
+import { getPayload } from 'payload'
+import { Suspense } from 'react'
 
-import { CategoryItem } from './Categories.client'
 import { AccordionContent, AccordionTrigger } from '@/components/ui/accordion'
-import {
-  buildCategoryTree,
-  findCategoryByPath,
-  getAllCategoriesFlat,
-  parentId as _parentId,
-} from '@/utilities/categories'
+import { buildCategoryTree, findCategoryByPath, getAllCategoriesFlat } from '@/utilities/categories'
+import { CategoryItem } from './Categories.client'
 
 type Props = {
-  gender: string
+  audience: string
   categorySegments?: string[]
 }
 
-async function CategoryList({ gender, categorySegments }: Props) {
+async function CategoryList({ audience, categorySegments }: Props) {
   const allCategories = await getAllCategoriesFlat()
   const { childrenByParent, getDescendantIds } = buildCategoryTree(allCategories)
 
   let children: typeof allCategories
 
   if (categorySegments?.length) {
-    const current = findCategoryByPath(allCategories, [gender, ...categorySegments])
+    // Path-relative children. `categorySegments` are the URL segments after
+    // the audience prefix (e.g. ['tops'] from /men/tops), matching the
+    // plugin's taxonomy-relative breadcrumb URLs.
+    const current = findCategoryByPath(allCategories, categorySegments)
+    console.log(current, "current");
+    
     if (!current) return null
     children = childrenByParent.get(String(current.id)) ?? []
   } else {
-    const root = allCategories.find((c) => {
+    // No segments → show top-level categories. In the audience model these
+    // are the taxonomy roots (Tops, Bottoms, New, …). There is no per-gender
+    // root category anymore, so we just take everything with no parent.
+    children = allCategories.filter((c) => {
       const pid = typeof c.parent === 'object' && c.parent ? c.parent.id : c.parent
-      return !pid && c.gender === gender && c.slug === gender
+      return !pid
     })
-    if (!root) return null
-    children = childrenByParent.get(String(root.id)) ?? []
   }
 
   if (children.length === 0) return null
 
   const payload = await getPayload({ config: configPromise })
+
+  // 'new' is a virtual section, not an audience. For it, show counts across
+  // all audiences; for men/women, scope counts to that audience.
+  const isAudience = audience === 'men' || audience === 'women'
 
   const childrenWithCounts = await Promise.all(
     children.map(async (child) => {
@@ -48,7 +53,7 @@ async function CategoryList({ gender, categorySegments }: Props) {
         where: {
           and: [
             { _status: { equals: 'published' } },
-            { gender: { equals: gender } },
+            ...(isAudience ? [{ audiences: { in: [audience] } }] : []),
             { categories: { in: ids } },
           ],
         },
@@ -56,9 +61,6 @@ async function CategoryList({ gender, categorySegments }: Props) {
       return { category: child, count: totalDocs }
     }),
   )
-
-  // console.log(childrenWithCounts);
-  
 
   return (
     <div>

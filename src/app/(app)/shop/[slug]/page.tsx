@@ -5,25 +5,32 @@ import { resolveSelectedCategoryIds } from '@/utilities/categories'
 import { Grid } from '@/components/Grid'
 import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
+import { ShopFilters } from '@/components/layout/search/ShopFilters'
 
-const VALID_GENDERS = ['men', 'women', 'unisex', 'new']
+const VALID_SLUGS = ['men', 'women', 'new'] as const
+type ValidSlug = (typeof VALID_SLUGS)[number]
+
+const AUDIENCES = ['men', 'women'] as const
+type Audience = (typeof AUDIENCES)[number]
+
 const NEW_ARRIVALS_CATEGORY_SLUG = 'new'
+
+const isAudience = (slug: ValidSlug): slug is Audience =>
+  (AUDIENCES as readonly string[]).includes(slug)
 
 type Props = {
   params: Promise<{ slug: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
-export default async function GenderShopPage({ params, searchParams }: Props) {
-  const { slug: gender } = await params
+export default async function AudienceShopPage({ params, searchParams }: Props) {
+  const { slug } = await params
   const { q: searchValue, sort, category, page } = await searchParams
 
-  if (!VALID_GENDERS.includes(gender)) notFound()
+  if (!VALID_SLUGS.includes(slug as ValidSlug)) notFound()
 
-  const isNewArrivals = gender === 'new'
-
+  const isNewArrivals = slug === 'new'
   const payload = await getPayload({ config: configPromise })
-
   const selectedCategoryIds = await resolveSelectedCategoryIds(category)
 
   let newArrivalsCategoryId: string | number | undefined
@@ -36,9 +43,6 @@ export default async function GenderShopPage({ params, searchParams }: Props) {
     })
     newArrivalsCategoryId = newCategory.docs[0]?.id
   }
-
-  // men/women pages also include unisex products; unisex page stays unisex-only
-  const genderValues = gender === 'men' || gender === 'women' ? [gender, 'unisex'] : [gender]
 
   const products = await payload.find({
     collection: 'products',
@@ -64,7 +68,7 @@ export default async function GenderShopPage({ params, searchParams }: Props) {
           ? newArrivalsCategoryId
             ? [{ categories: { in: [newArrivalsCategoryId] } }]
             : [{ id: { equals: -1 } }]
-          : [{ gender: { in: genderValues } }]),
+          : [{ audiences: { in: [slug as Audience] } }]),
         ...(selectedCategoryIds ? [{ categories: { in: selectedCategoryIds } }] : []),
         ...(searchValue
           ? [
@@ -80,41 +84,47 @@ export default async function GenderShopPage({ params, searchParams }: Props) {
   const resultsText = products.docs.length > 1 ? 'results' : 'result'
 
   return (
-    <div className="uppercase tracking-widest">
-      <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
-        {isNewArrivals ? 'New Arrivals' : gender}
-      </h1>
+    <ShopFilters>
+      <div className="uppercase tracking-widest">
+        <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
+          {isNewArrivals ? 'New Arrivals' : slug}
+        </h1>
 
-      {searchValue ? (
-        <p className="mb-4">
-          {products.docs.length === 0
-            ? 'There are no products that match '
-            : `Showing ${products.docs.length} ${resultsText} for `}
-          <span className="font-bold">&quot;{searchValue}&quot;</span>
-        </p>
-      ) : null}
+        {searchValue ? (
+          <p className="mb-4">
+            {products.docs.length === 0
+              ? 'There are no products that match '
+              : `Showing ${products.docs.length} ${resultsText} for `}
+            <span className="font-bold">&quot;{searchValue}&quot;</span>
+          </p>
+        ) : null}
 
-      {products.docs.length === 0 && !searchValue && (
-        <p className="mb-4">No products found. Please try different filters.</p>
-      )}
+        {products.docs.length === 0 && !searchValue && (
+          <p className="mb-4">No products found. Please try different filters.</p>
+        )}
 
-      {products.docs.length > 0 && (
-        <>
-          <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.docs.map((product) => (
-              <ProductGridItem key={product.id} product={product} />
-            ))}
-          </Grid>
+        {products.docs.length > 0 && (
+          <>
+            <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {products.docs.map((product) => (
+                <ProductGridItem key={product.id} product={product} />
+              ))}
+            </Grid>
 
-          {products.totalPages > 1 && (
-            <Pagination page={products.page ?? 1} totalPages={products.totalPages} useQueryParams />
-          )}
-        </>
-      )}
-    </div>
+            {products.totalPages > 1 && (
+              <Pagination
+                page={products.page ?? 1}
+                totalPages={products.totalPages}
+                useQueryParams
+              />
+            )}
+          </>
+        )}
+      </div>
+    </ShopFilters>
   )
 }
 
 export function generateStaticParams() {
-  return VALID_GENDERS.map((slug) => ({ slug }))
+  return VALID_SLUGS.map((slug) => ({ slug }))
 }

@@ -2,14 +2,11 @@ import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import type { Category } from '@/payload-types'
 
-export async function getTopLevelCategories(gender?: string) {
+export async function getTopLevelCategories() {
   const payload = await getPayload({ config: configPromise })
   const { docs } = await payload.find({
     collection: 'categories',
-    where: {
-      parent: { exists: false },
-      ...(gender ? { gender: { equals: gender } } : {}),
-    },
+    where: { parent: { exists: false } },
     sort: 'title',
     depth: 0,
   })
@@ -21,6 +18,9 @@ export async function getCategoryByFullPath(segments: string[]): Promise<Categor
   const payload = await getPayload({ config: configPromise })
   const leafSlug = segments[segments.length - 1]
   const targetPath = `/${segments.join('/')}`
+
+  console.log(leafSlug, targetPath);
+  
 
   // slug alone can collide across different parents (Men/Tshirts vs Women/Tshirts),
   // so pull all matches and disambiguate by full breadcrumb path

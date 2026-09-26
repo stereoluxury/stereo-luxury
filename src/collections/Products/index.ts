@@ -200,18 +200,19 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
       ],
     },
     {
-      name: 'gender',
-      admin: {
-        position: 'sidebar',
-        sortOptions: 'title',
-      },
+      name: 'audiences',
       type: 'select',
+      hasMany: true,
+      required: true,
       options: [
         { label: 'Men', value: 'men' },
         { label: 'Women', value: 'women' },
-        { label: 'Unisex', value: 'unisex' },
       ],
-      required: true,
+      admin: {
+        position: 'sidebar',
+        sortOptions: 'label',
+        description: 'Which storefront sections this product appears in.',
+      },
     },
     {
       name: 'releaseDate',

@@ -23,6 +23,7 @@ import { MenuIcon } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { audienceUrl, categoryUrl } from '@/utilities/categoryUrl'
 
 interface Props {
   menu: NavItem[]
@@ -132,16 +133,23 @@ function MobileMegaMenu({
 }: {
   megaMenu: Extract<NavItem, { type: 'megaMenu' }>['megaMenu']
 }) {
-  const rootSlug = megaMenu.rootCategory.slug
+  const { audience } = megaMenu
 
   return (
     <div className="space-y-8 pb-4">
+      <Link
+        href={audienceUrl(audience)}
+        className="block text-sm font-medium uppercase tracking-widest"
+      >
+        Shop all {megaMenu.label}
+      </Link>
+
       {megaMenu.featured?.length ? (
         <div className="grid grid-cols-2 gap-x-4">
           {megaMenu.featured.map((f) => (
             <Link
               key={f.title}
-              href={`/${rootSlug}/${f.link.slug}`}
+              href={categoryUrl(audience, f.link)}
               className="group relative text-sm"
             >
               <img
@@ -160,9 +168,9 @@ function MobileMegaMenu({
           <p className="font-medium text-foreground uppercase tracking-widest">{section.label}</p>
           <ul className="mt-4 flex flex-col space-y-4">
             {section.categories.map((cat) => (
-              <li key={cat.id}>
-                <Link href={`/${rootSlug}/${cat.slug}`} className="text-muted-foreground">
-                  {cat.title}
+              <li key={typeof cat === 'object' ? cat.id : cat}>
+                <Link href={categoryUrl(audience, cat)} className="text-muted-foreground">
+                  {typeof cat === 'object' ? cat.title : ''}
                 </Link>
               </li>
             ))}

@@ -5,17 +5,17 @@ import { sorting } from '@/lib/constants' // wherever `sorting` currently lives
 
 export function FilterAccordion({
   defaultValue = 'item-1',
-  gender,
+  audience,
   categorySegments,
 }: {
   defaultValue?: string
-  gender: string
+  audience: string
   categorySegments?: string[]
 }) {
   return (
     <Accordion defaultValue={defaultValue} type="single" collapsible>
       <AccordionItem value="item-1">
-        <Categories gender={gender} categorySegments={categorySegments} />
+        <Categories audience={audience} categorySegments={categorySegments} />
       </AccordionItem>
       <AccordionItem value="item-3">
         <FilterList list={sorting} title="Sort by" />

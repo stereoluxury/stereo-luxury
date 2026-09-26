@@ -1,6 +1,4 @@
-import { slugField } from 'payload'
 import type { CollectionConfig } from 'payload'
-
 import { adminOnly } from '@/access/adminOnly'
 
 export const Categories: CollectionConfig = {
@@ -14,73 +12,46 @@ export const Categories: CollectionConfig = {
   },
 
   admin: {
-    useAsTitle: 'title',
+    useAsTitle: 'slug',
     group: 'Ecommerce',
   },
 
   fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'parent', type: 'relationship', relationTo: 'categories' },
+    { name: 'description', type: 'textarea' },
+    { name: 'image', type: 'upload', relationTo: 'media' },
     {
-      name: 'title',
+      name: 'slug',
       type: 'text',
-      required: true,
-    },
-
-    {
-      name: 'parent',
-      type: 'relationship',
-      relationTo: 'categories',
-    },
-
-    {
-      name: 'description',
-      type: 'textarea',
-    },
-
-    {
-      name: 'image',
-      type: 'upload',
-      relationTo: 'media',
-    },
-
-    {
-      name: 'gender',
-      type: 'select',
-      options: [
-        { label: 'Men', value: 'men' },
-        { label: 'Women', value: 'women' },
-        { label: 'Unisex', value: 'unisex' },
-      ],
-      admin: {
-        position: 'sidebar',
-        description: 'Automatically inherited from the top-level category.',
-      },
-
+      unique: true,
+      index: true,
+      admin: { position: 'sidebar' },
       hooks: {
-        beforeChange: [
-          async ({ data, req }) => {
-            // Top-level category
-            if (!data?.parent) {
-              return data?.gender
-            }
-            let parentId = typeof data.parent === 'object' ? data.parent.id : data.parent
-            while (parentId) {
-              const parent = await req.payload.findByID({
-                collection: 'categories',
-                id: parentId,
-                depth: 0,
-              })
-              // We've reached the top-level category.
-              if (!parent.parent) {
-                return parent.gender
-              }
-              parentId = typeof parent.parent === 'object' ? parent.parent.id : parent.parent
-            }
-            return undefined
+        beforeValidate: [
+          async ({ data, req, originalDoc }) => {
+            const title = data?.title ?? originalDoc?.title
+            if (!title) return data?.slug
+
+            const base = title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/(^-|-$)/g, '')
+
+            const parentId = typeof data?.parent === 'object' ? data?.parent?.id : data?.parent
+
+            if (!parentId) return base
+
+            const parent = await req.payload.findByID({
+              collection: 'categories',
+              id: parentId,
+              depth: 0,
+            })
+
+            return `${parent.slug}/${base}` // e.g. tops/t-shirts
           },
         ],
       },
     },
-
-    slugField(),
   ],
 }

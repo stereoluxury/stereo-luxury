@@ -320,7 +320,10 @@ export interface Product {
     image?: (string | null) | Media;
     description?: string | null;
   };
-  gender: 'men' | 'women' | 'unisex';
+  /**
+   * Which storefront sections this product appears in.
+   */
+  audiences: ('men' | 'women')[];
   /**
    * Controls when this product goes live and appears in New Arrivals. Products with a future date are treated as upcoming drops.
    */
@@ -622,15 +625,7 @@ export interface Category {
   parent?: (string | null) | Category;
   description?: string | null;
   image?: (string | null) | Media;
-  /**
-   * Automatically inherited from the top-level category.
-   */
-  gender?: ('men' | 'women' | 'unisex') | null;
-  /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
-   */
-  generateSlug?: boolean | null;
-  slug: string;
+  slug?: string | null;
   breadcrumbs?:
     | {
         doc?: (string | null) | Category;
@@ -1644,8 +1639,6 @@ export interface CategoriesSelect<T extends boolean = true> {
   parent?: T;
   description?: T;
   image?: T;
-  gender?: T;
-  generateSlug?: T;
   slug?: T;
   breadcrumbs?:
     | T
@@ -1926,7 +1919,7 @@ export interface ProductsSelect<T extends boolean = true> {
         image?: T;
         description?: T;
       };
-  gender?: T;
+  audiences?: T;
   releaseDate?: T;
   categories?: T;
   generateSlug?: T;
@@ -2138,9 +2131,9 @@ export interface Header {
         megaMenu?: {
           label: string;
           /**
-           * Which top-level category this tab points to
+           * Storefront section this tab points to. Prepended to every category URL in the flyout.
            */
-          rootCategory: string | Category;
+          audience: 'men' | 'women';
           /**
            * Promo tiles (e.g. "New Arrivals", "Basic Tees")
            */
@@ -2148,6 +2141,9 @@ export interface Header {
             | {
                 title: string;
                 image: string | Media;
+                /**
+                 * Resolves to /{audience}/{categoryPath}
+                 */
                 link: string | Category;
                 id?: string | null;
               }[]
@@ -2222,7 +2218,7 @@ export interface HeaderSelect<T extends boolean = true> {
           | T
           | {
               label?: T;
-              rootCategory?: T;
+              audience?: T;
               featured?:
                 | T
                 | {

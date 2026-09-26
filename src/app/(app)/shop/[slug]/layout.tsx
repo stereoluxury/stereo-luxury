@@ -10,16 +10,16 @@ type Props = {
 }
 
 export default async function ShopLayout({ children, params }: Props) {
-  const { slug: gender, categories } = await params  
+  const { slug: audience, categories } = await params
 
   return (
     <Suspense fallback={null}>
       <div className="container flex flex-col gap-8 my-16 pb-4">
         <Search className="mb-8" />
 
-        <div className="flex md:hidden items-center justify-between gap-4">
+        {/* <div className="flex md:hidden items-center justify-between gap-4">
           <FiltersSheet>
-            <FilterAccordion gender={gender} categorySegments={categories} />
+            <FilterAccordion audience={audience} categorySegments={categories} />
             <ClearFiltersButton />
           </FiltersSheet>
           <ClearFiltersButton />
@@ -27,12 +27,12 @@ export default async function ShopLayout({ children, params }: Props) {
 
         <div className="flex flex-col md:flex-row items-start justify-between gap-16 md:gap-8">
           <div className="hidden md:flex w-full flex-none flex-col gap-4 md:gap-8 basis-1/5">
-            <FilterAccordion gender={gender} categorySegments={categories} />
+            <FilterAccordion audience={audience} categorySegments={categories} />
             <ClearFiltersButton className="self-start" />
           </div>
 
           <div className="min-h-screen w-full">{children}</div>
-        </div>
+        </div> */}
       </div>
     </Suspense>
   )
