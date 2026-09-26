@@ -2,12 +2,12 @@
 import React, { useCallback, useMemo } from 'react'
 
 import { Category } from '@/payload-types'
-import { usePathname, useSearchParams, useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import { Check } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 
 type Props = {
-  category: Category
+  category: Pick<Category, 'id' | 'title'>
   count: number
 }
 

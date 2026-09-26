@@ -64,6 +64,7 @@ export const productHatData: (args: ProductArgs) => RequiredDataFromCollectionSl
     priceInUSD: 2500,
     relatedProducts: relatedProducts,
     gender: 'unisex',
+    audiences: ['men', 'women'],
     releaseDate: new Date().toISOString(),
   }
 }

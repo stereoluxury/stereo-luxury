@@ -1,16 +1,14 @@
 'use client'
 
-import type { SortFilterItem as SortFilterItemType } from '@/lib/constants'
+import type { SortFilterItem as SortFilterItemType } from '@/lib/sorting'
 
 import { createUrl } from '@/utilities/createUrl'
 import clsx from 'clsx'
+import { Check } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { Check } from 'lucide-react'
-import React from 'react'
 
-import type { ListItem } from '.'
-import type { PathFilterItem as PathFilterItemType } from '.'
+import type { ListItem, PathFilterItem as PathFilterItemType } from '.'
 
 function FilterCheckbox({ active }: { active: boolean }) {
   return (

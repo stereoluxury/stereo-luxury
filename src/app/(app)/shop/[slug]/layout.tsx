@@ -17,7 +17,7 @@ export default async function ShopLayout({ children, params }: Props) {
       <div className="container flex flex-col gap-8 my-16 pb-4">
         <Search className="mb-8" />
 
-        <div className="flex md:hidden items-center justify-between gap-4">
+        {/* <div className="flex md:hidden items-center justify-between gap-4">
           <FiltersSheet>
             <FilterAccordion audience={audience} categorySegments={categories} />
             <ClearFiltersButton />
@@ -32,7 +32,8 @@ export default async function ShopLayout({ children, params }: Props) {
           </div>
 
           <div className="min-h-screen w-full">{children}</div>
-        </div>
+        </div> */}
+        <>{children}</>
       </div>
     </Suspense>
   )

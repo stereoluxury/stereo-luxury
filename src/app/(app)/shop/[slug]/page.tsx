@@ -1,10 +1,15 @@
-import { notFound } from 'next/navigation'
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
-import { resolveSelectedCategoryIds } from '@/utilities/categories'
 import { Grid } from '@/components/Grid'
 import { Pagination } from '@/components/Pagination'
 import { ProductGridItem } from '@/components/ProductGridItem'
+import { ShopFilters } from '@/components/layout/search/ShopFilters'
+import {
+  buildCategoryTree,
+  getAllCategoriesFlat,
+  resolveSelectedCategoryIds,
+} from '@/utilities/categories'
+import configPromise from '@payload-config'
+import { notFound } from 'next/navigation'
+import { getPayload } from 'payload'
 
 const VALID_SLUGS = ['men', 'women', 'new'] as const
 type ValidSlug = (typeof VALID_SLUGS)[number]
@@ -31,6 +36,28 @@ export default async function AudienceShopPage({ params, searchParams }: Props) 
   const isNewArrivals = slug === 'new'
   const payload = await getPayload({ config: configPromise })
   const selectedCategoryIds = await resolveSelectedCategoryIds(category)
+  const allCategories = await getAllCategoriesFlat()
+  const { getDescendantIds } = buildCategoryTree(allCategories)
+  const rootCategories = allCategories.filter((item) => {
+    const parent = typeof item.parent === 'object' && item.parent ? item.parent.id : item.parent
+    return !parent
+  })
+  const categoryItems = await Promise.all(
+    rootCategories.map(async (category) => {
+      const ids = [String(category.id), ...getDescendantIds(String(category.id))]
+      const { totalDocs } = await payload.count({
+        collection: 'products',
+        where: {
+          and: [
+            { _status: { equals: 'published' } },
+            ...(isAudience(slug as ValidSlug) ? [{ audiences: { in: [slug] } }] : []),
+            { categories: { in: ids } },
+          ],
+        },
+      })
+      return { category: { id: category.id, title: category.title }, count: totalDocs }
+    }),
+  )
 
   let newArrivalsCategoryId: string | number | undefined
   if (isNewArrivals) {
@@ -83,38 +110,44 @@ export default async function AudienceShopPage({ params, searchParams }: Props) 
   const resultsText = products.docs.length > 1 ? 'results' : 'result'
 
   return (
-    <div className="uppercase tracking-widest">
-      <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
-        {isNewArrivals ? 'New Arrivals' : slug}
-      </h1>
+    <ShopFilters categoryItems={categoryItems}>
+      <div className="uppercase tracking-widest">
+        <h1 className="text-2xl mb-4 uppercase font-anton text-primary-foreground">
+          {isNewArrivals ? 'New Arrivals' : slug}
+        </h1>
 
-      {searchValue ? (
-        <p className="mb-4">
-          {products.docs.length === 0
-            ? 'There are no products that match '
-            : `Showing ${products.docs.length} ${resultsText} for `}
-          <span className="font-bold">&quot;{searchValue}&quot;</span>
-        </p>
-      ) : null}
+        {searchValue ? (
+          <p className="mb-4">
+            {products.docs.length === 0
+              ? 'There are no products that match '
+              : `Showing ${products.docs.length} ${resultsText} for `}
+            <span className="font-bold">&quot;{searchValue}&quot;</span>
+          </p>
+        ) : null}
 
-      {products.docs.length === 0 && !searchValue && (
-        <p className="mb-4">No products found. Please try different filters.</p>
-      )}
+        {products.docs.length === 0 && !searchValue && (
+          <p className="mb-4">No products found. Please try different filters.</p>
+        )}
 
-      {products.docs.length > 0 && (
-        <>
-          <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {products.docs.map((product) => (
-              <ProductGridItem key={product.id} product={product} />
-            ))}
-          </Grid>
+        {products.docs.length > 0 && (
+          <>
+            <Grid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {products.docs.map((product) => (
+                <ProductGridItem key={product.id} product={product} />
+              ))}
+            </Grid>
 
-          {products.totalPages > 1 && (
-            <Pagination page={products.page ?? 1} totalPages={products.totalPages} useQueryParams />
-          )}
-        </>
-      )}
-    </div>
+            {products.totalPages > 1 && (
+              <Pagination
+                page={products.page ?? 1}
+                totalPages={products.totalPages}
+                useQueryParams
+              />
+            )}
+          </>
+        )}
+      </div>
+    </ShopFilters>
   )
 }
 
