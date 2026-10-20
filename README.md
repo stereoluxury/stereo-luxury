@@ -24,7 +24,7 @@ Core features:
 - [Carts](#carts)
 - [Guest checkout](#guests)
 - [Orders & Transactions](#orders-and-transactions)
-- [Stripe Payments](#stripe)
+- [Paystack Payments](#paystack-payments)
 - [Currencies](#currencies)
 - [Automated Tests](#tests)
 
@@ -201,9 +201,36 @@ This email verification flow prevents unauthorized access to order details. The 
 
 By default the template ships with support only for USD however you can change the supported currencies via the [plugin configuration](https://payloadcms.com/docs/ecommerce/plugin#currencies). You will need to ensure that the supported currencies in Payload are also configured in your Payment platforms.
 
-## Stripe
+## Paystack Payments
 
-By default we ship with the Stripe adapter configured, so you'll need to setup the `secretKey`, `publishableKey` and `webhookSecret` from your Stripe dashboard. Follow [Stripe's guide](https://docs.stripe.com/get-started/api-request?locale=en-GB) on how to set this up.
+Checkout uses Paystack. Configure the existing Payload variables `DATABASE_URL` and `PAYLOAD_SECRET`, plus `PAYSTACK_SECRET_KEY`, `NEXT_PUBLIC_SERVER_URL`, `RESEND_API_KEY`, `ADMIN_EMAIL`, and `PAYLOAD_JOBS_TOKEN` in the deployment environment. `ADMIN_EMAIL` is required for the admin notification; the customer receipt is sent separately. Keep the Paystack secret and jobs token server-only.
+
+Set the Paystack webhook URL in the Paystack dashboard to either endpoint below:
+
+```text
+https://<your-store-domain>/api/payments/paystack/webhooks
+https://<your-store-domain>/api/paystack/webhooks
+```
+
+Paystack signs the raw webhook body using the secret key; the endpoint rejects unsigned or invalid events and independently verifies successful charges with Paystack before finalizing an order. A browser callback uses the same verification/finalization path, so the webhook can complete an order even if the customer closes the tab.
+
+Webhook and browser finalization are serialized with a short-lived per-payment lock. MongoDB transient write conflicts are retried a bounded number of times; if finalization still fails, Paystack can retry the webhook and the customer can safely retry the confirmation page.
+
+Enable the `charge.success` and `charge.failed` events for this webhook in the Paystack dashboard.
+
+Order receipt and admin notification emails are queued using Payload Jobs. Run a worker/cron at least once per minute against `GET /api/payload-jobs/run?limit=10`, sending `Authorization: Bearer <PAYLOAD_JOBS_TOKEN>`. The endpoint is denied unless the token matches. The job queue must be actively run in production; queued emails remain pending otherwise. Payload's built-in `autoRun` is intentionally not used because it is unsuitable for serverless deployments.
+
+Use a MongoDB replica set in production so order creation, transaction updates, cart marking, and inventory changes participate in database transactions. No explicit data migration is required: MongoDB creates the Payload jobs collection and the added order/transaction fields from the config; run `pnpm generate:types` after schema changes.
+
+### Sandbox checkout checklist
+
+1. Configure Paystack test keys, the public store URL, Resend, admin email, and the jobs worker token.
+2. Set the Paystack test webhook to the URL above and confirm it is reachable over HTTPS.
+3. Place a guest and a signed-in test order; complete a successful Paystack test payment.
+4. Confirm the webhook finalizes the order when the callback page is not opened.
+5. Retry the webhook and callback; confirm one order, one inventory deduction per item, and no repeated receipt/admin email.
+6. Confirm pending, failed, amount-mismatch, and invalid-signature cases never mark an order paid.
+7. Stop the jobs worker temporarily, complete a payment, then restart it and confirm queued email delivery and retry behavior.
 
 ## Tests
 
@@ -255,7 +282,7 @@ Core features:
 - SEO
 - Search
 - Live preview
-- Stripe payments
+- Paystack payments
 
 ### Cache
 

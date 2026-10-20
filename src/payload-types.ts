@@ -147,6 +147,7 @@ export interface Config {
   user: User;
   jobs: {
     tasks: {
+      sendOrderEmails: TaskSendOrderEmails;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -268,6 +269,9 @@ export interface Order {
   amount?: number | null;
   currency?: ('NGN' | 'USD') | null;
   accessToken?: string | null;
+  paystackReference?: string | null;
+  receiptEmailSentAt?: string | null;
+  adminNotificationSentAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1005,6 +1009,21 @@ export interface Transaction {
   cart?: (string | null) | Cart;
   amount?: number | null;
   currency?: ('NGN' | 'USD') | null;
+  shippingAddress?: {
+    title?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    company?: string | null;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
+    phone?: string | null;
+  };
+  finalizationLock?: string | null;
+  finalizationLockUntil?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1229,7 +1248,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
+        taskSlug: 'inline' | 'sendOrderEmails' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -1262,10 +1281,14 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'sendOrderEmails' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2003,6 +2026,9 @@ export interface OrdersSelect<T extends boolean = true> {
   amount?: T;
   currency?: T;
   accessToken?: T;
+  paystackReference?: T;
+  receiptEmailSentAt?: T;
+  adminNotificationSentAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2050,6 +2076,23 @@ export interface TransactionsSelect<T extends boolean = true> {
   cart?: T;
   amount?: T;
   currency?: T;
+  shippingAddress?:
+    | T
+    | {
+        title?: T;
+        firstName?: T;
+        lastName?: T;
+        company?: T;
+        addressLine1?: T;
+        addressLine2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
+        phone?: T;
+      };
+  finalizationLock?: T;
+  finalizationLockUntil?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2089,6 +2132,7 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2292,6 +2336,18 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendOrderEmails".
+ */
+export interface TaskSendOrderEmails {
+  input: {
+    orderID: string;
+  };
+  output: {
+    completed: boolean;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

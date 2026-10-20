@@ -16,7 +16,6 @@ import {
 import { format } from 'date-fns'
 import * as React from 'react'
 import { Order, Product, Variant } from '../../payload-types'
-import { b } from 'node_modules/vitest/dist/chunks/suite.d.BJWk38HB'
 
 interface AdminOrderNotificationEmailProps {
   order: Order
@@ -362,7 +361,6 @@ const logo = {
   margin: '0 auto',
   borderRadius: '50%',
 }
-
 
 const heading = {
   fontSize: '28px',

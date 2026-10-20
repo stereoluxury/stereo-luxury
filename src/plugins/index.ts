@@ -15,18 +15,17 @@ import { customerOnlyFieldAccess } from '@/access/customerOnlyFieldAccess'
 import { isAdmin } from '@/access/isAdmin'
 import { isDocumentOwner } from '@/access/isDocumentOwner'
 import { ProductsCollection } from '@/collections/Products'
-import { AdminOrderNotificationEmailHtml, formatPrice } from '@/components/Emails/AdminOrderEmail'
-import { OrderConfirmationEmailHtml } from '@/components/Emails/RecieptEmail'
 import { currenciesConfig } from '@/lib/constants'
-import { Cart, Page, Product } from '@/payload-types'
+import { Address, Cart, Page, Product } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
-import { normalizePaystackStatus } from '@/utilities/paystack'
+import { finalizePaystackPayment, markPaystackTransactionFailed } from '@/lib/payments/paystack'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import type { HandleDelete, HandleUpload } from '@payloadcms/plugin-cloud-storage/types'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary'
 import { OrdersCollection } from '@/collections/Orders'
 import { flattenCart } from '@/lib/cartSnapshot'
+import { isValidPaystackSignature } from '@/utilities/paystack'
 
 const generateTitle: GenerateTitle<Product | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | Payload Ecommerce Template` : 'Payload Ecommerce Template'
@@ -58,6 +57,78 @@ function getResourceType(filename: string): 'image' | 'video' | 'raw' {
   if (VIDEO_EXTENSIONS.includes(ext)) return 'video'
   if (RAW_EXTENSIONS.includes(ext)) return 'raw'
   return 'image'
+}
+
+export async function handlePaystackWebhook(req: PayloadRequest): Promise<Response> {
+  const secretKey = process.env.PAYSTACK_SECRET_KEY
+  if (!secretKey) {
+    req.payload.logger.error('Paystack secret key is not configured')
+    return Response.json({ message: 'Payment service is unavailable' }, { status: 503 })
+  }
+
+  const rawBody = req.text ? await req.text() : ''
+  if (!isValidPaystackSignature(rawBody, req.headers.get('x-paystack-signature'), secretKey)) {
+    return Response.json({ message: 'Invalid Paystack signature' }, { status: 401 })
+  }
+
+  let body: unknown
+  try {
+    body = JSON.parse(rawBody)
+  } catch {
+    return Response.json({ message: 'Invalid webhook body' }, { status: 400 })
+  }
+
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    !('event' in body) ||
+    typeof body.event !== 'string'
+  ) {
+    return Response.json({ message: 'Invalid Paystack webhook event' }, { status: 400 })
+  }
+
+  if (body.event !== 'charge.success' && body.event !== 'charge.failed') {
+    return Response.json({ received: true })
+  }
+
+  if (
+    !('data' in body) ||
+    typeof body.data !== 'object' ||
+    body.data === null ||
+    !('reference' in body.data) ||
+    typeof body.data.reference !== 'string'
+  ) {
+    return Response.json({ message: 'Paystack reference is missing' }, { status: 400 })
+  }
+
+  if (body.event === 'charge.failed') {
+    try {
+      await markPaystackTransactionFailed({
+        payload: req.payload,
+        req,
+        reference: body.data.reference,
+      })
+      return Response.json({ received: true })
+    } catch (error) {
+      req.payload.logger.error({ err: error }, 'Unable to update failed Paystack transaction')
+      return Response.json({ message: 'Unable to process payment webhook' }, { status: 500 })
+    }
+  }
+
+  try {
+    const result = await finalizePaystackPayment({
+      payload: req.payload,
+      req,
+      reference: body.data.reference,
+    })
+    if (result.status === 'pending') {
+      return Response.json({ message: 'Payment verification is pending' }, { status: 503 })
+    }
+    return Response.json({ received: true })
+  } catch (error) {
+    req.payload.logger.error({ err: error }, 'Unable to finalize Paystack webhook payment')
+    return Response.json({ message: 'Unable to process payment webhook' }, { status: 500 })
+  }
 }
 
 cloudinary.config({
@@ -142,44 +213,45 @@ const paystackAdapter = (): PaymentAdapter => ({
       condition: (data) => data?.paymentMethod === 'paystack',
     },
     fields: [
-      {
-        name: 'reference',
-        type: 'text',
-        label: 'Paystack Reference',
-      },
-      {
-        name: 'status',
-        type: 'text',
-        label: 'Paystack Status',
-      },
+      { name: 'reference', type: 'text', label: 'Paystack Reference', index: true },
+      { name: 'status', type: 'text', label: 'Paystack Status' },
     ],
   },
   async initiatePayment({ data, req, transactionsSlug }) {
     const payload = req.payload
-    const { cart, customerEmail, billingAddress, shippingAddress } = data
+    const paymentData = data as {
+      billingAddress?: Partial<Address>
+      cart?: Cart
+      currency?: string
+      customerEmail?: string
+      email?: string
+      shippingAddress?: Partial<Address>
+    }
+    const { cart, customerEmail, billingAddress, shippingAddress } = paymentData
     const secretKey = process.env.PAYSTACK_SECRET_KEY
     const transactionsCollection = (transactionsSlug || 'transactions') as 'transactions'
-    const resolvedCustomerEmail = (customerEmail ||
-      (data as { email?: string }).email ||
-      req.user?.email ||
-      '') as string
+    const resolvedCustomerEmail = (customerEmail || paymentData.email || req.user?.email || '')
+      .trim()
+      .toLowerCase()
 
-    if (!secretKey) {
-      throw new Error('Paystack secret key is required')
-    }
-
-    if (!cart || !cart.items?.length) {
-      throw new Error('Cart is empty or not provided')
-    }
-
+    if (!secretKey) throw new Error('Paystack secret key is required')
+    if (!cart || !cart.items?.length) throw new Error('Cart is empty or not provided')
     if (!resolvedCustomerEmail) {
       throw new Error('A valid customer email is required to make a purchase')
     }
 
-    const currency = (data.currency || cart.currency || 'NGN').toUpperCase()
-    const flattenedCart = await flattenCart(cart as Cart, currency, payload)
+    const currency = (paymentData.currency || cart.currency || 'NGN').toUpperCase()
+    if (currency !== 'NGN' && currency !== 'USD') {
+      throw new Error(`Unsupported Paystack currency: ${currency}`)
+    }
 
     const amount = cart.subtotal
+    if (typeof amount !== 'number' || !Number.isInteger(amount) || amount <= 0) {
+      throw new Error('Cart total must be a positive integer in the configured currency unit')
+    }
+
+    const flattenedCart = await flattenCart(cart, currency, payload)
+    const callbackURL = new URL('/checkout/confirm-order', getServerSideURL()).toString()
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
@@ -189,20 +261,40 @@ const paystackAdapter = (): PaymentAdapter => ({
       body: JSON.stringify({
         amount,
         email: resolvedCustomerEmail,
-        callback_url: `${process.env.NEXT_PUBLIC_SERVER_URL}/checkout/confirm-order?email=${encodeURIComponent(resolvedCustomerEmail)}`,
-        metadata: {
-          cartID: cart.id,
-          cartItemsSnapshot: JSON.stringify(flattenedCart),
-          shippingAddress: JSON.stringify(shippingAddress || null),
-          billingAddress: JSON.stringify(billingAddress || null),
-        },
+        callback_url: callbackURL,
+        metadata: { cartID: cart.id },
       }),
+      signal: AbortSignal.timeout(10_000),
     })
 
-    const json = await response.json()
+    const body: unknown = await response.json()
+    if (
+      !response.ok ||
+      typeof body !== 'object' ||
+      body === null ||
+      !('status' in body) ||
+      body.status !== true ||
+      !('data' in body) ||
+      typeof body.data !== 'object' ||
+      body.data === null ||
+      !('authorization_url' in body.data) ||
+      typeof body.data.authorization_url !== 'string' ||
+      !('reference' in body.data) ||
+      typeof body.data.reference !== 'string'
+    ) {
+      const message =
+        typeof body === 'object' &&
+        body !== null &&
+        'message' in body &&
+        typeof body.message === 'string'
+          ? body.message
+          : 'Unable to initialize Paystack payment'
+      throw new Error(message)
+    }
 
-    if (!response.ok || !json.status) {
-      throw new Error(json.message || 'Unable to initialize Paystack payment')
+    const authorizationURL = new URL(body.data.authorization_url)
+    if (authorizationURL.protocol !== 'https:') {
+      throw new Error('Paystack returned an invalid checkout URL')
     }
 
     const transaction = await payload.create({
@@ -212,223 +304,95 @@ const paystackAdapter = (): PaymentAdapter => ({
         customerEmail: resolvedCustomerEmail,
         amount,
         billingAddress,
+        shippingAddress: shippingAddress ?? billingAddress,
         cart: cart.id,
         currency,
         items: flattenedCart,
         paymentMethod: 'paystack',
         status: 'pending',
         paystack: {
-          reference: json.data.reference,
+          reference: body.data.reference,
           status: 'pending',
         },
-      } as any,
+      },
       req,
     })
 
     return {
       message: 'Payment initiated successfully',
-      authorizationUrl: json.data.authorization_url,
-      reference: json.data.reference,
+      authorizationUrl: authorizationURL.toString(),
+      reference: body.data.reference,
       transactionID: transaction.id,
     }
   },
-  async confirmOrder({ data, req, transactionsSlug }) {
-    const payload = req.payload
-    const paymentReference = data.paymentReference || data.reference
-    const { cartsSlug = 'carts', ordersSlug = 'orders' } =
-      (req?.payload?.config as { cartsSlug?: string; ordersSlug?: string } | undefined) || {}
-    const secretKey = process.env.PAYSTACK_SECRET_KEY
-    const transactionsCollection = (transactionsSlug || 'transactions') as 'transactions'
-    const ordersCollection = (ordersSlug || 'orders') as 'orders'
-    const cartsCollection = (cartsSlug || 'carts') as 'carts'
-
-    if (!secretKey) {
-      throw new Error('Paystack secret key is required')
+  async confirmOrder({ data, req }) {
+    const paymentData = data as {
+      paymentReference?: string
+      reference?: string
     }
+    const reference = paymentData.paymentReference || paymentData.reference
+    if (!reference) throw new Error('Paystack reference is required')
 
-    if (!paymentReference) {
-      throw new Error('Paystack reference is required')
-    }
-
-    const response = await fetch(`https://api.paystack.co/transaction/verify/${paymentReference}`, {
-      headers: {
-        Authorization: `Bearer ${secretKey}`,
-      },
-    })
-
-    const json = await response.json()
-
-    if (!response.ok || !json.status) {
-      throw new Error(json.message || 'Unable to verify Paystack payment')
-    }
-
-    const status = json.data.status
-    const normalizedStatus = normalizePaystackStatus(status)
-
-    const transactionsResults = await payload.find({
-      collection: transactionsCollection,
+    const result = await finalizePaystackPayment({
+      payload: req.payload,
       req,
-      where: {
-        'paystack.reference': {
-          equals: paymentReference,
-        },
-      },
+      reference,
     })
-
-    const transaction = transactionsResults.docs[0] as any
-
-    if (!transactionsResults.totalDocs || !transaction) {
-      throw new Error('No transaction found for the provided Paystack reference')
-    }
-
-    const cartID = transaction.cart?.id || transaction.cart
-    const cartItemsSnapshot = transaction.items || []
-    const shippingAddress = transaction.billingAddress || null
-
-    if (!cartID) {
-      throw new Error('Cart ID not found in the transaction metadata')
-    }
-
-    const resolvedCustomerEmail = (data.customerEmail ||
-      data.email ||
-      transaction.customerEmail ||
-      req.user?.email ||
-      json.data?.customer?.email ||
-      '') as string
-
-    if (!resolvedCustomerEmail) {
-      throw new Error('Customer email is missing from the Paystack transaction')
-    }
-
-    const customerID =
-      (typeof transaction.customer === 'object' && transaction.customer?.id) ||
-      transaction.customer ||
-      req.user?.id
-
-    const order = await payload.create({
-      collection: ordersCollection,
-      data: {
-        amount: transaction.amount,
-        currency: transaction.currency,
-        ...(customerID ? { customer: customerID } : {}),
-        customerEmail: resolvedCustomerEmail,
-        items: cartItemsSnapshot,
-        shippingAddress,
-        status: normalizedStatus === 'succeeded' ? 'processing' : 'pending',
-        transactions: [transaction.id],
-      } as any,
-      req,
-    })
-
-    await payload.update({
-      id: cartID,
-      collection: cartsCollection,
-      data: {
-        purchasedAt: new Date().toISOString(),
-      } as any,
-      req,
-    })
-
-    await payload.update({
-      id: transaction.id,
-      collection: transactionsCollection,
-      data: {
-        order: order.id,
-        status: normalizedStatus,
-        paystack: {
-          ...(transaction.paystack || {}),
-          status: normalizedStatus,
-        },
-      } as any,
-      req,
-    })
-
-    try {
-      const completeOrder = await payload.findByID({
-        collection: 'orders',
-        id: order.id,
-        depth: 2,
-      })
-
-      // Existing: send to customer
-      const emailHtml = await OrderConfirmationEmailHtml({ order: completeOrder })
-      await payload.sendEmail({
-        to: resolvedCustomerEmail,
-        subject: `Order Confirmation - #${order.id.slice(0, 8).toUpperCase()}`,
-        html: emailHtml,
-      })
-
-      // New: send to admin
-      const adminEmailHtml = await AdminOrderNotificationEmailHtml({ order: completeOrder })
-      await payload.sendEmail({
-        to: process.env.ADMIN_EMAIL!, // add this to your .env
-        subject: `New Order #${order.id.toUpperCase()} - ${formatPrice(order.amount ?? 0, order.currency ?? 'NGN')}`,
-        html: adminEmailHtml,
-      })
-    } catch (emailError) {
-      payload.logger.error(emailError, 'Failed to send order emails')
+    if (result.status !== 'succeeded') {
+      throw new Error(`Paystack payment is ${result.status}`)
     }
 
     return {
       message: 'Order confirmed successfully',
-      orderID: order.id,
-      transactionID: transaction.id,
-      ...(order.accessToken ? { accessToken: order.accessToken } : {}),
+      orderID: result.orderID,
+      // Payload decrements stock for truthy transaction IDs; the shared finalizer already did so.
+      transactionID: '',
+      ...(result.accessToken ? { accessToken: result.accessToken } : {}),
     }
   },
   endpoints: [
     {
       method: 'post',
-      path: '/webhooks',
+      path: '/confirmation',
       handler: async (req) => {
-        const body = req.json ? await req.json() : undefined
-        const event = body?.event
-        const reference = body?.data?.reference
+        let body: unknown
+        try {
+          body = req.json ? await req.json() : undefined
+        } catch {
+          return Response.json({ message: 'Invalid request body' }, { status: 400 })
+        }
 
-        if (!reference || !event) {
+        if (
+          typeof body !== 'object' ||
+          body === null ||
+          !('reference' in body) ||
+          typeof body.reference !== 'string'
+        ) {
+          return Response.json({ message: 'Paystack reference is required' }, { status: 400 })
+        }
+
+        try {
+          const result = await finalizePaystackPayment({
+            payload: req.payload,
+            req,
+            reference: body.reference,
+          })
+          return Response.json(result, {
+            status: result.status === 'pending' ? 202 : result.status === 'failed' ? 402 : 200,
+          })
+        } catch (error) {
+          req.payload.logger.error({ err: error }, 'Unable to confirm Paystack payment')
           return Response.json(
-            { success: false, message: 'Missing Paystack webhook payload' },
-            { status: 400 },
+            { message: 'Unable to confirm payment. Please try again.' },
+            { status: 502 },
           )
         }
-
-        const payload = req.payload
-        const transactionsResults = await payload.find({
-          collection: 'transactions',
-          req,
-          where: {
-            'paystack.reference': {
-              equals: reference,
-            },
-          },
-        })
-
-        const transaction = transactionsResults.docs[0] as any
-
-        if (transaction) {
-          const normalizedStatus =
-            event === 'charge.success'
-              ? 'succeeded'
-              : event === 'charge.failed'
-                ? 'failed'
-                : 'pending'
-
-          await payload.update({
-            id: transaction.id,
-            collection: 'transactions',
-            data: {
-              status: normalizedStatus,
-              paystack: {
-                ...(transaction.paystack || {}),
-                status: normalizedStatus,
-              },
-            } as any,
-            req,
-          })
-        }
-
-        return Response.json({ success: true })
       },
+    },
+    {
+      method: 'post',
+      path: '/webhooks',
+      handler: handlePaystackWebhook,
     },
   ],
 })
@@ -530,48 +494,77 @@ export const plugins: Plugin[] = [
     transactions: {
       transactionsCollectionOverride: ({ defaultCollection }) => ({
         ...defaultCollection,
-        fields: defaultCollection.fields.map((field) => {
-          if (field.type !== 'tabs') return field
+        fields: [
+          ...defaultCollection.fields.map((field) => {
+            if (field.type !== 'tabs') return field
 
-          return {
-            ...field,
-            tabs: field.tabs?.map((tab) => ({
-              ...tab,
-              fields: (tab.fields || []).map((tabField) => {
-                if (
-                  !fieldAffectsData(tabField) ||
-                  tabField.name !== 'items' ||
-                  tabField.type !== 'array'
-                ) {
-                  return tabField
-                }
+            return {
+              ...field,
+              tabs: field.tabs?.map((tab) => ({
+                ...tab,
+                fields: (tab.fields || []).map((tabField) => {
+                  if (
+                    !fieldAffectsData(tabField) ||
+                    tabField.name !== 'items' ||
+                    tabField.type !== 'array'
+                  ) {
+                    return tabField
+                  }
 
-                return {
-                  ...tabField,
-                  fields: [
-                    ...(tabField.fields || []),
-                    amountField({
-                      currenciesConfig,
-                      overrides: {
-                        name: 'unitPrice',
-                        label: 'Unit Price',
-                        defaultValue: 0,
-                      },
-                    }),
-                    amountField({
-                      currenciesConfig,
-                      overrides: {
-                        name: 'unitCostPrice',
-                        label: 'Unit Cost Price',
-                        defaultValue: 0,
-                      },
-                    }),
-                  ],
-                }
-              }),
-            })),
-          }
-        }),
+                  return {
+                    ...tabField,
+                    fields: [
+                      ...(tabField.fields || []),
+                      amountField({
+                        currenciesConfig,
+                        overrides: {
+                          name: 'unitPrice',
+                          label: 'Unit Price',
+                          defaultValue: 0,
+                        },
+                      }),
+                      amountField({
+                        currenciesConfig,
+                        overrides: {
+                          name: 'unitCostPrice',
+                          label: 'Unit Cost Price',
+                          defaultValue: 0,
+                        },
+                      }),
+                    ],
+                  }
+                }),
+              })),
+            }
+          }),
+          {
+            name: 'shippingAddress',
+            type: 'group',
+            fields: [
+              { name: 'title', type: 'text' },
+              { name: 'firstName', type: 'text' },
+              { name: 'lastName', type: 'text' },
+              { name: 'company', type: 'text' },
+              { name: 'addressLine1', type: 'text' },
+              { name: 'addressLine2', type: 'text' },
+              { name: 'city', type: 'text' },
+              { name: 'state', type: 'text' },
+              { name: 'postalCode', type: 'text' },
+              { name: 'country', type: 'text' },
+              { name: 'phone', type: 'text' },
+            ],
+          },
+          {
+            name: 'finalizationLock',
+            type: 'text',
+            admin: { hidden: true },
+          },
+          {
+            name: 'finalizationLockUntil',
+            type: 'date',
+            admin: { hidden: true },
+          },
+        ],
       }),
     },
   }),

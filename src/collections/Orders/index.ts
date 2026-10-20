@@ -93,6 +93,31 @@ export const OrdersCollection: CollectionOverride = ({ defaultCollection }) => {
           ],
         },
       },
+      {
+        name: 'paystackReference',
+        type: 'text',
+        index: true,
+        admin: {
+          position: 'sidebar',
+          readOnly: true,
+        },
+      },
+      {
+        name: 'receiptEmailSentAt',
+        type: 'date',
+        admin: {
+          position: 'sidebar',
+          readOnly: true,
+        },
+      },
+      {
+        name: 'adminNotificationSentAt',
+        type: 'date',
+        admin: {
+          position: 'sidebar',
+          readOnly: true,
+        },
+      },
       //   amountField({
       //     currenciesConfig,
       //     overrides: {
