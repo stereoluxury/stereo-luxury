@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react'
 
 export const ConfirmOrder: React.FC = () => {
   const { confirmOrder } = usePayments()
-  const { cart } = useCart()
+  const { cart, clearCart } = useCart()
   const { user } = useAuth()
 
   const searchParams = useSearchParams()
@@ -46,6 +46,8 @@ export const ConfirmOrder: React.FC = () => {
             }
 
             const queryString = queryParams.toString()
+
+            clearCart()
             router.push(`/orders/${result.orderID}${queryString ? `?${queryString}` : ''}`)
           }
         })

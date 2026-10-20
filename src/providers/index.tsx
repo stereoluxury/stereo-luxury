@@ -26,6 +26,10 @@ export const Providers: React.FC<{
                     title: true,
                     gallery: true,
                     inventory: true,
+                    priceInUSD: true,
+                    priceInNGN: true,
+                    costPriceInUSD: true,
+                    costPriceInNGN: true,
                   },
                   variants: {
                     title: true,

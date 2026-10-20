@@ -1,11 +1,6 @@
 'use client'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useAddresses } from '@payloadcms/plugin-ecommerce/client/react'
-import { defaultCountries as supportedCountries } from '@payloadcms/plugin-ecommerce/client/react'
-import { Address, Config } from '@/payload-types'
 import {
   Select,
   SelectContent,
@@ -13,13 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Address, Config } from '@/payload-types'
+import { useAddresses } from '@payloadcms/plugin-ecommerce/client/react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { useForm } from 'react-hook-form'
 
-import { titles } from './constants'
-import { Button } from '@/components/ui/button'
-import { deepMergeSimple } from 'payload/shared'
 import { FormError } from '@/components/forms/FormError'
 import { FormItem } from '@/components/forms/FormItem'
+import { Button } from '@/components/ui/button'
 import { City, Country, State } from 'country-state-city'
+import { deepMergeSimple } from 'payload/shared'
+import { titles } from './constants'
+import { Spinner } from '@/components/ui/spinner'
 
 const NIGERIA_COUNTRY_CODE = 'NG'
 
@@ -319,7 +319,7 @@ export const AddressForm: React.FC<Props> = ({
           aria-hidden
           className="absolute inset-0 -z-10 origin-bottom scale-y-0 bg-primary transition-transform duration-300 ease-out group-hover:scale-y-100"
         />
-        Submit
+        {isLoading ? <Spinner /> : 'Submit'}
       </Button>
     </form>
   )

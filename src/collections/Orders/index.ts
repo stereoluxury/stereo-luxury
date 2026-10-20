@@ -1,0 +1,109 @@
+import { currenciesConfig } from '@/lib/constants'
+import { amountField } from '@payloadcms/plugin-ecommerce'
+import { CollectionOverride } from '@payloadcms/plugin-ecommerce/types'
+import { fieldAffectsData } from 'payload/shared'
+
+export const OrdersCollection: CollectionOverride = ({ defaultCollection }) => {
+  const nextFields = (defaultCollection.fields || []).map((f) => {
+    if (f.type !== 'tabs') return f
+
+    return {
+      ...f,
+      tabs: f.tabs?.map((tab) => {
+        return {
+          ...tab,
+          fields: (tab.fields || []).map((tabField) => {
+            if (
+              fieldAffectsData(tabField) &&
+              tabField.name === 'items' &&
+              tabField.type === 'array'
+            ) {
+              return {
+                ...tabField,
+                fields: [
+                  ...(tabField.fields || []),
+                  //   amountField({
+                  //     currenciesConfig,
+                  //     overrides: {
+                  //       name: 'unitOriginalPrice',
+                  //       label: 'Unit Original Price',
+                  //       defaultValue: 0,
+                  //     },
+                  //   }),
+                  //   amountField({
+                  //     currenciesConfig,
+                  //     overrides: {
+                  //       name: 'unitDiscount',
+                  //       label: 'Unit Discount',
+                  //       defaultValue: 0,
+                  //     },
+                  //   }),
+                  amountField({
+                    currenciesConfig,
+                    overrides: {
+                      name: 'unitPrice',
+                      label: `Unit Price`,
+                      defaultValue: 0,
+                    },
+                  }),
+                  amountField({
+                    currenciesConfig,
+                    overrides: {
+                      name: 'unitCostPrice',
+                      label: `Unit Cost Price`,
+                      defaultValue: 0,
+                    },
+                  }),
+                ],
+              }
+            }
+            return tabField
+          }),
+        }
+      }),
+    }
+  })
+
+  return {
+    ...defaultCollection,
+    admin: {
+      ...defaultCollection.admin,
+      useAsTitle: 'id',
+      defaultColumns: ['id', 'customerEmail', 'status', 'amount', 'currency', 'createdAt'],
+    },
+    fields: [
+      ...nextFields,
+      {
+        name: 'accessToken',
+        type: 'text',
+        unique: true,
+        index: true,
+        admin: {
+          position: 'sidebar',
+          readOnly: true,
+        },
+        hooks: {
+          beforeValidate: [
+            ({ value, operation }) => {
+              if (operation === 'create' || !value) {
+                return crypto.randomUUID()
+              }
+              return value
+            },
+          ],
+        },
+      },
+      //   amountField({
+      //     currenciesConfig,
+      //     overrides: {
+      //       name: 'shippingFee',
+      //       label: 'Shipping Fee',
+      //       defaultValue: 0,
+      //       admin: {
+      //         position: 'sidebar',
+      //       },
+      //     },
+      //   }),
+    ],
+  }
+}

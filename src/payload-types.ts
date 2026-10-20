@@ -243,6 +243,8 @@ export interface Order {
         product?: (string | null) | Product;
         variant?: (string | null) | Variant;
         quantity: number;
+        unitPrice?: number | null;
+        unitCostPrice?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -311,6 +313,14 @@ export interface Product {
   priceInNGN?: number | null;
   priceInUSDEnabled?: boolean | null;
   priceInUSD?: number | null;
+  /**
+   * Internal cost price in NGN
+   */
+  costPriceInNGN?: number | null;
+  /**
+   * Internal cost price in USD
+   */
+  costPriceInUSD?: number | null;
   relatedProducts?: (string | Product)[] | null;
   meta?: {
     title?: string | null;
@@ -965,6 +975,8 @@ export interface Transaction {
         product?: (string | null) | Product;
         variant?: (string | null) | Variant;
         quantity: number;
+        unitPrice?: number | null;
+        unitCostPrice?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -1075,7 +1087,8 @@ export interface Address {
     | 'SI'
     | 'ES'
     | 'SE'
-    | 'CH';
+    | 'CH'
+    | 'NG';
   phone?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1911,6 +1924,8 @@ export interface ProductsSelect<T extends boolean = true> {
   priceInNGN?: T;
   priceInUSDEnabled?: T;
   priceInUSD?: T;
+  costPriceInNGN?: T;
+  costPriceInUSD?: T;
   relatedProducts?: T;
   meta?:
     | T
@@ -1962,6 +1977,8 @@ export interface OrdersSelect<T extends boolean = true> {
         product?: T;
         variant?: T;
         quantity?: T;
+        unitPrice?: T;
+        unitCostPrice?: T;
         id?: T;
       };
   shippingAddress?:
@@ -2000,6 +2017,8 @@ export interface TransactionsSelect<T extends boolean = true> {
         product?: T;
         variant?: T;
         quantity?: T;
+        unitPrice?: T;
+        unitCostPrice?: T;
         id?: T;
       };
   paymentMethod?: T;

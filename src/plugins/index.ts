@@ -1,9 +1,11 @@
-import { ecommercePlugin } from '@payloadcms/plugin-ecommerce'
+import { amountField, ecommercePlugin } from '@payloadcms/plugin-ecommerce'
+import { defaultCountries } from '@payloadcms/plugin-ecommerce/client/react'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { FixedToolbarFeature, HeadingFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import { PayloadRequest, Plugin } from 'payload'
+import { fieldAffectsData } from 'payload/shared'
 
 import { PaymentAdapter } from '@payloadcms/plugin-ecommerce/types'
 
@@ -13,14 +15,18 @@ import { customerOnlyFieldAccess } from '@/access/customerOnlyFieldAccess'
 import { isAdmin } from '@/access/isAdmin'
 import { isDocumentOwner } from '@/access/isDocumentOwner'
 import { ProductsCollection } from '@/collections/Products'
-import { Page, Product } from '@/payload-types'
+import { AdminOrderNotificationEmailHtml, formatPrice } from '@/components/Emails/AdminOrderEmail'
+import { OrderConfirmationEmailHtml } from '@/components/Emails/RecieptEmail'
+import { currenciesConfig } from '@/lib/constants'
+import { Cart, Page, Product } from '@/payload-types'
 import { getServerSideURL } from '@/utilities/getURL'
 import { normalizePaystackStatus } from '@/utilities/paystack'
-import { currenciesConfig } from '@/lib/constants'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import type { HandleDelete, HandleUpload } from '@payloadcms/plugin-cloud-storage/types'
 import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary'
+import { OrdersCollection } from '@/collections/Orders'
+import { flattenCart } from '@/lib/cartSnapshot'
 
 const generateTitle: GenerateTitle<Product | Page> = ({ doc }) => {
   return doc?.title ? `${doc.title} | Payload Ecommerce Template` : 'Payload Ecommerce Template'
@@ -170,22 +176,8 @@ const paystackAdapter = (): PaymentAdapter => ({
       throw new Error('A valid customer email is required to make a purchase')
     }
 
-    const flattenedCart = cart.items.map((item) => {
-      const productID = typeof item.product === 'object' ? item.product.id : item.product
-      const variantID = item.variant
-        ? typeof item.variant === 'object'
-          ? item.variant.id
-          : item.variant
-        : undefined
-      const { product: _product, variant: _variant, ...customProperties } = item
-
-      return {
-        ...customProperties,
-        product: productID,
-        quantity: item.quantity,
-        ...(variantID ? { variant: variantID } : {}),
-      }
-    })
+    const currency = (data.currency || cart.currency || 'NGN').toUpperCase()
+    const flattenedCart = await flattenCart(cart as Cart, currency, payload)
 
     const amount = cart.subtotal
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
@@ -216,11 +208,12 @@ const paystackAdapter = (): PaymentAdapter => ({
     const transaction = await payload.create({
       collection: transactionsCollection,
       data: {
-        ...(req.user ? { customer: req.user.id } : { customerEmail: resolvedCustomerEmail }),
+        ...(req.user ? { customer: req.user.id } : {}),
+        customerEmail: resolvedCustomerEmail,
         amount,
         billingAddress,
         cart: cart.id,
-        currency: data.currency?.toUpperCase() || 'USD',
+        currency,
         items: flattenedCart,
         paymentMethod: 'paystack',
         status: 'pending',
@@ -245,10 +238,6 @@ const paystackAdapter = (): PaymentAdapter => ({
     const { cartsSlug = 'carts', ordersSlug = 'orders' } =
       (req?.payload?.config as { cartsSlug?: string; ordersSlug?: string } | undefined) || {}
     const secretKey = process.env.PAYSTACK_SECRET_KEY
-    const resolvedCustomerEmail = (data.customerEmail ||
-      data.email ||
-      req.user?.email ||
-      '') as string
     const transactionsCollection = (transactionsSlug || 'transactions') as 'transactions'
     const ordersCollection = (ordersSlug || 'orders') as 'orders'
     const cartsCollection = (cartsSlug || 'carts') as 'carts'
@@ -300,14 +289,29 @@ const paystackAdapter = (): PaymentAdapter => ({
       throw new Error('Cart ID not found in the transaction metadata')
     }
 
+    const resolvedCustomerEmail = (data.customerEmail ||
+      data.email ||
+      transaction.customerEmail ||
+      req.user?.email ||
+      json.data?.customer?.email ||
+      '') as string
+
+    if (!resolvedCustomerEmail) {
+      throw new Error('Customer email is missing from the Paystack transaction')
+    }
+
+    const customerID =
+      (typeof transaction.customer === 'object' && transaction.customer?.id) ||
+      transaction.customer ||
+      req.user?.id
+
     const order = await payload.create({
       collection: ordersCollection,
       data: {
         amount: transaction.amount,
         currency: transaction.currency,
-        ...(req.user
-          ? { customer: req.user.id }
-          : { customerEmail: resolvedCustomerEmail || transaction.customerEmail }),
+        ...(customerID ? { customer: customerID } : {}),
+        customerEmail: resolvedCustomerEmail,
         items: cartItemsSnapshot,
         shippingAddress,
         status: normalizedStatus === 'succeeded' ? 'processing' : 'pending',
@@ -338,6 +342,32 @@ const paystackAdapter = (): PaymentAdapter => ({
       } as any,
       req,
     })
+
+    try {
+      const completeOrder = await payload.findByID({
+        collection: 'orders',
+        id: order.id,
+        depth: 2,
+      })
+
+      // Existing: send to customer
+      const emailHtml = await OrderConfirmationEmailHtml({ order: completeOrder })
+      await payload.sendEmail({
+        to: resolvedCustomerEmail,
+        subject: `Order Confirmation - #${order.id.slice(0, 8).toUpperCase()}`,
+        html: emailHtml,
+      })
+
+      // New: send to admin
+      const adminEmailHtml = await AdminOrderNotificationEmailHtml({ order: completeOrder })
+      await payload.sendEmail({
+        to: process.env.ADMIN_EMAIL!, // add this to your .env
+        subject: `New Order #${order.id.toUpperCase()} - ${formatPrice(order.amount ?? 0, order.currency ?? 'NGN')}`,
+        html: adminEmailHtml,
+      })
+    } catch (emailError) {
+      payload.logger.error(emailError, 'Failed to send order emails')
+    }
 
     return {
       message: 'Order confirmed successfully',
@@ -484,33 +514,11 @@ export const plugins: Plugin[] = [
     customers: {
       slug: 'users',
     },
+    addresses: {
+      supportedCountries: [...defaultCountries, { label: 'Nigeria', value: 'NG' }],
+    },
     orders: {
-      ordersCollectionOverride: ({ defaultCollection }) => ({
-        ...defaultCollection,
-        fields: [
-          ...defaultCollection.fields,
-          {
-            name: 'accessToken',
-            type: 'text',
-            unique: true,
-            index: true,
-            admin: {
-              position: 'sidebar',
-              readOnly: true,
-            },
-            hooks: {
-              beforeValidate: [
-                ({ value, operation }) => {
-                  if (operation === 'create' || !value) {
-                    return crypto.randomUUID()
-                  }
-                  return value
-                },
-              ],
-            },
-          },
-        ],
-      }),
+      ordersCollectionOverride: OrdersCollection,
     },
     currencies: currenciesConfig,
     payments: {
@@ -518,6 +526,53 @@ export const plugins: Plugin[] = [
     },
     products: {
       productsCollectionOverride: ProductsCollection,
+    },
+    transactions: {
+      transactionsCollectionOverride: ({ defaultCollection }) => ({
+        ...defaultCollection,
+        fields: defaultCollection.fields.map((field) => {
+          if (field.type !== 'tabs') return field
+
+          return {
+            ...field,
+            tabs: field.tabs?.map((tab) => ({
+              ...tab,
+              fields: (tab.fields || []).map((tabField) => {
+                if (
+                  !fieldAffectsData(tabField) ||
+                  tabField.name !== 'items' ||
+                  tabField.type !== 'array'
+                ) {
+                  return tabField
+                }
+
+                return {
+                  ...tabField,
+                  fields: [
+                    ...(tabField.fields || []),
+                    amountField({
+                      currenciesConfig,
+                      overrides: {
+                        name: 'unitPrice',
+                        label: 'Unit Price',
+                        defaultValue: 0,
+                      },
+                    }),
+                    amountField({
+                      currenciesConfig,
+                      overrides: {
+                        name: 'unitCostPrice',
+                        label: 'Unit Cost Price',
+                        defaultValue: 0,
+                      },
+                    }),
+                  ],
+                }
+              }),
+            })),
+          }
+        }),
+      }),
     },
   }),
 ]

@@ -77,7 +77,7 @@ export const CheckoutPage: React.FC = () => {
     const authorizationUrl = paymentData?.['authorizationUrl'] as string | undefined
 
     if (authorizationUrl) {
-      window.open(authorizationUrl, '_blank', 'noopener,noreferrer')
+      window.location.assign(authorizationUrl)
     }
   }, [paymentData])
 
@@ -88,7 +88,7 @@ export const CheckoutPage: React.FC = () => {
       try {
         const paymentData = (await initiatePayment(paymentID, {
           additionalData: {
-            ...(email ? { customerEmail: email } : {}),
+            ...(email || user?.email ? { customerEmail: email || user?.email } : {}),
             billingAddress,
             shippingAddress: billingAddressSameAsShipping ? billingAddress : shippingAddress,
           },
@@ -101,8 +101,8 @@ export const CheckoutPage: React.FC = () => {
         }
       } catch (error) {
         const errorData = error instanceof Error ? JSON.parse(error.message) : {}
-        console.log(errorData, error);
-        
+        console.log(errorData, error)
+
         let errorMessage = 'An error occurred while initiating payment.'
 
         if (errorData?.cause?.code === 'OutOfStock') {
@@ -114,7 +114,14 @@ export const CheckoutPage: React.FC = () => {
         setIsRedirectingToPaystack(false)
       }
     },
-    [billingAddress, billingAddressSameAsShipping, shippingAddress],
+    [
+      billingAddress,
+      billingAddressSameAsShipping,
+      email,
+      initiatePayment,
+      shippingAddress,
+      user?.email,
+    ],
   )
 
   if (cartIsEmpty && isProcessingPayment) {

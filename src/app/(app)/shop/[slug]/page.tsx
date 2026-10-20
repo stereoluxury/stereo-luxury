@@ -1,15 +1,15 @@
-import { Grid } from '@/components/Grid'
-import { Pagination } from '@/components/Pagination'
-import { ProductGridItem } from '@/components/ProductGridItem'
-import { ShopFilters } from '@/components/layout/search/ShopFilters'
+import { notFound } from 'next/navigation'
+import configPromise from '@payload-config'
+import { getPayload } from 'payload'
 import {
   buildCategoryTree,
   getAllCategoriesFlat,
   resolveSelectedCategoryIds,
 } from '@/utilities/categories'
-import configPromise from '@payload-config'
-import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
+import { Grid } from '@/components/Grid'
+import { Pagination } from '@/components/Pagination'
+import { ProductGridItem } from '@/components/ProductGridItem'
+import { ShopFilters } from '@/components/layout/search/ShopFilters'
 
 const VALID_SLUGS = ['men', 'women', 'new'] as const
 type ValidSlug = (typeof VALID_SLUGS)[number]
