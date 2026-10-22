@@ -7,6 +7,7 @@ import { adminOrSelf } from '@/access/adminOrSelf'
 import { checkRole } from '@/access/utilities'
 
 import { ensureFirstUserIsAdmin } from './hooks/ensureFirstUserIsAdmin'
+import { ForgotPasswordEmailHtml } from '@/components/Emails/ForgotPasswordEmail'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -25,6 +26,22 @@ export const Users: CollectionConfig = {
   },
   auth: {
     tokenExpiration: 1209600,
+    forgotPassword: {
+      generateEmailHTML: async (args) => {
+        // Generate the email HTML
+        if (!args) {
+          throw new Error('Invalid arguments')
+        }
+        const html = await ForgotPasswordEmailHtml({
+          token: args.token as string,
+          userEmail: args.user.email,
+        })
+        return html
+      },
+      generateEmailSubject: () => {
+        return 'Reset Your Password - Fwatches'
+      },
+    },
   },
   fields: [
     {

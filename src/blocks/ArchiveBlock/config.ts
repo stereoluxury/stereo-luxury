@@ -76,7 +76,8 @@ export const Archive: Block = {
       name: 'categories',
       type: 'relationship',
       admin: {
-        condition: (_, siblingData) => siblingData.populateBy === 'collection',
+        condition: (_, siblingData) =>
+          siblingData.populateBy === 'collection' && siblingData.filterType !== 'new-arrival',
       },
       hasMany: true,
       label: 'Categories To Show',

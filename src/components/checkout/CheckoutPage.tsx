@@ -23,6 +23,25 @@ import { Address } from '@/payload-types'
 import { useAddresses, useCart, usePayments } from '@payloadcms/plugin-ecommerce/client/react'
 import { toast } from 'sonner'
 
+function isOutOfStockError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+
+  try {
+    const errorData: unknown = JSON.parse(error.message)
+    return (
+      typeof errorData === 'object' &&
+      errorData !== null &&
+      'cause' in errorData &&
+      typeof errorData.cause === 'object' &&
+      errorData.cause !== null &&
+      'code' in errorData.cause &&
+      errorData.cause.code === 'OutOfStock'
+    )
+  } catch {
+    return false
+  }
+}
+
 export const CheckoutPage: React.FC = () => {
   const { user } = useAuth()
   const router = useRouter()
@@ -77,7 +96,7 @@ export const CheckoutPage: React.FC = () => {
     const authorizationUrl = paymentData?.['authorizationUrl'] as string | undefined
 
     if (authorizationUrl) {
-      window.open(authorizationUrl, '_blank', 'noopener,noreferrer')
+      window.location.assign(authorizationUrl)
     }
   }, [paymentData])
 
@@ -88,7 +107,7 @@ export const CheckoutPage: React.FC = () => {
       try {
         const paymentData = (await initiatePayment(paymentID, {
           additionalData: {
-            ...(email ? { customerEmail: email } : {}),
+            ...(email || user?.email ? { customerEmail: email || user?.email } : {}),
             billingAddress,
             shippingAddress: billingAddressSameAsShipping ? billingAddress : shippingAddress,
           },
@@ -100,21 +119,23 @@ export const CheckoutPage: React.FC = () => {
           setIsRedirectingToPaystack(false)
         }
       } catch (error) {
-        const errorData = error instanceof Error ? JSON.parse(error.message) : {}
-        console.log(errorData, error);
-        
-        let errorMessage = 'An error occurred while initiating payment.'
-
-        if (errorData?.cause?.code === 'OutOfStock') {
-          errorMessage = 'One or more items in your cart are out of stock.'
-        }
+        const errorMessage = isOutOfStockError(error)
+          ? 'One or more items in your cart are out of stock.'
+          : 'An error occurred while initiating payment.'
 
         setError(errorMessage)
         toast.error(errorMessage)
         setIsRedirectingToPaystack(false)
       }
     },
-    [billingAddress, billingAddressSameAsShipping, shippingAddress],
+    [
+      billingAddress,
+      billingAddressSameAsShipping,
+      email,
+      initiatePayment,
+      shippingAddress,
+      user?.email,
+    ],
   )
 
   if (cartIsEmpty && isProcessingPayment) {

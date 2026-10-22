@@ -128,9 +128,13 @@ export const FormBlock: React.FC<
   return (
     <div className="container lg:max-w-3xl">
       {enableIntro && introContent && !hasSubmitted && (
-        <RichText className="mb-8 lg:mb-12" data={introContent} enableGutter={false} />
+        <RichText
+          className="mb-8 lg:mb-12 tracking-widest font-archivo uppercase [&>h1]:text-3xl [&>h1]:text-primary-foreground [&>h1]:font-anton"
+          data={introContent}
+          enableGutter={false}
+        />
       )}
-      <div className="p-4 lg:p-6 border border-border rounded-[0.8rem]">
+      <div className="p-4 lg:p-6 border border-border">
         <FormProvider {...formMethods}>
           {!isLoading && hasSubmitted && confirmationType === 'message' && (
             <RichText data={confirmationMessage} />
@@ -148,7 +152,10 @@ export const FormBlock: React.FC<
 
                     if (Field) {
                       return (
-                        <div className="mb-6 last:mb-0" key={index}>
+                        <div
+                          className="mb-6 last:mb-0 tracking-widest font-archivo uppercase"
+                          key={index}
+                        >
                           <Field
                             form={formFromProps}
                             {...field}

@@ -1,21 +1,20 @@
 import { Accordion, AccordionItem } from '@/components/ui/accordion'
+import { sorting } from '@/lib/sorting'
+import type { Category } from '@/payload-types'
 import { Categories } from './Categories'
 import { FilterList } from './filter'
-import { sorting } from '@/lib/constants' // wherever `sorting` currently lives
 
 export function FilterAccordion({
   defaultValue = 'item-1',
-  gender,
-  categorySegments,
+  categoryItems,
 }: {
   defaultValue?: string
-  gender: string
-  categorySegments?: string[]
+  categoryItems: { category: Pick<Category, 'id' | 'title'>; count: number }[]
 }) {
   return (
     <Accordion defaultValue={defaultValue} type="single" collapsible>
       <AccordionItem value="item-1">
-        <Categories gender={gender} categorySegments={categorySegments} />
+        <Categories items={categoryItems} />
       </AccordionItem>
       <AccordionItem value="item-3">
         <FilterList list={sorting} title="Sort by" />

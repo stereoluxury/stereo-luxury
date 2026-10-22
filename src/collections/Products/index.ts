@@ -19,6 +19,8 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 import { DefaultDocumentIDType, Where } from 'payload'
+import { costPricesField } from '@/components/Fields/costPriceField'
+import { currenciesConfig } from '@/lib/constants'
 
 export const ProductsCollection: CollectionOverride = ({ defaultCollection }) => ({
   ...defaultCollection,
@@ -50,7 +52,9 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
     enableVariants: true,
     gallery: true,
     priceInUSD: true,
-    PriceInNGN: true,
+    priceInNGN: true,
+    costPriceInUSD: true,
+    costPriceInNGN: true,
     categories: true,
     inventory: true,
     meta: true,
@@ -145,6 +149,7 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
         {
           fields: [
             ...defaultCollection.fields,
+            ...costPricesField({ currenciesConfig }),
             {
               name: 'relatedProducts',
               type: 'relationship',
@@ -200,18 +205,19 @@ export const ProductsCollection: CollectionOverride = ({ defaultCollection }) =>
       ],
     },
     {
-      name: 'gender',
-      admin: {
-        position: 'sidebar',
-        sortOptions: 'title',
-      },
+      name: 'audiences',
       type: 'select',
+      hasMany: true,
+      required: true,
       options: [
         { label: 'Men', value: 'men' },
         { label: 'Women', value: 'women' },
-        { label: 'Unisex', value: 'unisex' },
       ],
-      required: true,
+      admin: {
+        position: 'sidebar',
+        sortOptions: 'label',
+        description: 'Which storefront sections this product appears in.',
+      },
     },
     {
       name: 'releaseDate',

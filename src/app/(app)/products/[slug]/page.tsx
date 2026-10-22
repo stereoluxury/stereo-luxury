@@ -119,10 +119,10 @@ export default async function ProductPage({ params }: Args) {
       />
       <div className="container pt-8 pb-8">
         <Button asChild variant="ghost" className="mb-4">
-          <Link href="/shop">
+          {/* <Link href="/shop">
             <ChevronLeftIcon />
-            All products
-          </Link>
+            Back
+          </Link> */}
         </Button>
         <div className="flex flex-col gap-12 p-8 md:py-12 lg:flex-row lg:gap-8">
           <div className="h-full w-full basis-full lg:basis-1/2">

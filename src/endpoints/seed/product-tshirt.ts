@@ -1173,6 +1173,7 @@ export const productTshirtData: (
     priceInUSD: 4999,
     relatedProducts: relatedProducts,
     gender: 'unisex',
+    audiences: ['men', 'women'],
     releaseDate: new Date().toISOString(),
   }
 }

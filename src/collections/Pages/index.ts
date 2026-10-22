@@ -10,6 +10,7 @@ import { Content } from '@/blocks/Content/config'
 import { Features } from '@/blocks/FeaturesBlock/config'
 import { FormBlock } from '@/blocks/Form/config'
 import { MediaBlock } from '@/blocks/MediaBlock/config'
+import { MediaCarouselBlock } from '@/blocks/MediaCarouselBlock/config'
 import { ThreeItemGrid } from '@/blocks/ThreeItemGrid/config'
 import { hero } from '@/fields/hero'
 import { generatePreviewPath } from '@/utilities/generatePreviewPath'
@@ -94,6 +95,7 @@ export const Pages: CollectionConfig = {
                 MediaBlock,
                 Archive,
                 Carousel,
+                MediaCarouselBlock,
                 ThreeItemGrid,
                 Banner,
                 FormBlock,

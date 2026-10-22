@@ -13,5 +13,8 @@
   "aliases": {
     "components": "@/components",
     "utils": "@/utilities"
+  },
+  "registries": {
+    "@reui": "https://reui.io/r/{style}/{name}.json"
   }
 }

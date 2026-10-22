@@ -147,6 +147,7 @@ export interface Config {
   user: User;
   jobs: {
     tasks: {
+      sendOrderEmails: TaskSendOrderEmails;
       schedulePublish: TaskSchedulePublish;
       inline: {
         input: unknown;
@@ -243,6 +244,8 @@ export interface Order {
         product?: (string | null) | Product;
         variant?: (string | null) | Variant;
         quantity: number;
+        unitPrice?: number | null;
+        unitCostPrice?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -266,6 +269,9 @@ export interface Order {
   amount?: number | null;
   currency?: ('NGN' | 'USD') | null;
   accessToken?: string | null;
+  paystackReference?: string | null;
+  receiptEmailSentAt?: string | null;
+  adminNotificationSentAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -311,6 +317,14 @@ export interface Product {
   priceInNGN?: number | null;
   priceInUSDEnabled?: boolean | null;
   priceInUSD?: number | null;
+  /**
+   * Internal cost price in NGN
+   */
+  costPriceInNGN?: number | null;
+  /**
+   * Internal cost price in USD
+   */
+  costPriceInUSD?: number | null;
   relatedProducts?: (string | Product)[] | null;
   meta?: {
     title?: string | null;
@@ -320,7 +334,10 @@ export interface Product {
     image?: (string | null) | Media;
     description?: string | null;
   };
-  gender: 'men' | 'women' | 'unisex';
+  /**
+   * Which storefront sections this product appears in.
+   */
+  audiences: ('men' | 'women')[];
   /**
    * Controls when this product goes live and appears in New Arrivals. Products with a future date are treated as upcoming drops.
    */
@@ -499,6 +516,7 @@ export interface Page {
     | MediaBlock
     | ArchiveBlock
     | CarouselBlock
+    | MediaCarouselBlock
     | ThreeItemGridBlock
     | BannerBlock
     | FormBlock
@@ -621,15 +639,7 @@ export interface Category {
   parent?: (string | null) | Category;
   description?: string | null;
   image?: (string | null) | Media;
-  /**
-   * Automatically inherited from the top-level category.
-   */
-  gender?: ('men' | 'women' | 'unisex') | null;
-  /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
-   */
-  generateSlug?: boolean | null;
-  slug: string;
+  slug?: string | null;
   breadcrumbs?:
     | {
         doc?: (string | null) | Category;
@@ -672,6 +682,26 @@ export interface CarouselBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'carousel';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaCarouselBlock".
+ */
+export interface MediaCarouselBlock {
+  autoplay?: boolean | null;
+  /**
+   * Autoplay delay in milliseconds
+   */
+  delay?: number | null;
+  slides?:
+    | {
+        image: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'mediaCarousel';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -949,6 +979,8 @@ export interface Transaction {
         product?: (string | null) | Product;
         variant?: (string | null) | Variant;
         quantity: number;
+        unitPrice?: number | null;
+        unitCostPrice?: number | null;
         id?: string | null;
       }[]
     | null;
@@ -977,6 +1009,21 @@ export interface Transaction {
   cart?: (string | null) | Cart;
   amount?: number | null;
   currency?: ('NGN' | 'USD') | null;
+  shippingAddress?: {
+    title?: string | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    company?: string | null;
+    addressLine1?: string | null;
+    addressLine2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
+    phone?: string | null;
+  };
+  finalizationLock?: string | null;
+  finalizationLockUntil?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1059,7 +1106,8 @@ export interface Address {
     | 'SI'
     | 'ES'
     | 'SE'
-    | 'CH';
+    | 'CH'
+    | 'NG';
   phone?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1200,7 +1248,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'schedulePublish';
+        taskSlug: 'inline' | 'sendOrderEmails' | 'schedulePublish';
         taskID: string;
         input?:
           | {
@@ -1233,10 +1281,14 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'schedulePublish') | null;
+  taskSlug?: ('inline' | 'sendOrderEmails' | 'schedulePublish') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1413,6 +1465,7 @@ export interface PagesSelect<T extends boolean = true> {
         mediaBlock?: T | MediaBlockSelect<T>;
         archive?: T | ArchiveBlockSelect<T>;
         carousel?: T | CarouselBlockSelect<T>;
+        mediaCarousel?: T | MediaCarouselBlockSelect<T>;
         threeItemGrid?: T | ThreeItemGridBlockSelect<T>;
         banner?: T | BannerBlockSelect<T>;
         formBlock?: T | FormBlockSelect<T>;
@@ -1522,6 +1575,22 @@ export interface CarouselBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "MediaCarouselBlock_select".
+ */
+export interface MediaCarouselBlockSelect<T extends boolean = true> {
+  autoplay?: T;
+  delay?: T;
+  slides?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ThreeItemGridBlock_select".
  */
 export interface ThreeItemGridBlockSelect<T extends boolean = true> {
@@ -1606,8 +1675,6 @@ export interface CategoriesSelect<T extends boolean = true> {
   parent?: T;
   description?: T;
   image?: T;
-  gender?: T;
-  generateSlug?: T;
   slug?: T;
   breadcrumbs?:
     | T
@@ -1880,6 +1947,8 @@ export interface ProductsSelect<T extends boolean = true> {
   priceInNGN?: T;
   priceInUSDEnabled?: T;
   priceInUSD?: T;
+  costPriceInNGN?: T;
+  costPriceInUSD?: T;
   relatedProducts?: T;
   meta?:
     | T
@@ -1888,7 +1957,7 @@ export interface ProductsSelect<T extends boolean = true> {
         image?: T;
         description?: T;
       };
-  gender?: T;
+  audiences?: T;
   releaseDate?: T;
   categories?: T;
   generateSlug?: T;
@@ -1931,6 +2000,8 @@ export interface OrdersSelect<T extends boolean = true> {
         product?: T;
         variant?: T;
         quantity?: T;
+        unitPrice?: T;
+        unitCostPrice?: T;
         id?: T;
       };
   shippingAddress?:
@@ -1955,6 +2026,9 @@ export interface OrdersSelect<T extends boolean = true> {
   amount?: T;
   currency?: T;
   accessToken?: T;
+  paystackReference?: T;
+  receiptEmailSentAt?: T;
+  adminNotificationSentAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1969,6 +2043,8 @@ export interface TransactionsSelect<T extends boolean = true> {
         product?: T;
         variant?: T;
         quantity?: T;
+        unitPrice?: T;
+        unitCostPrice?: T;
         id?: T;
       };
   paymentMethod?: T;
@@ -2000,6 +2076,23 @@ export interface TransactionsSelect<T extends boolean = true> {
   cart?: T;
   amount?: T;
   currency?: T;
+  shippingAddress?:
+    | T
+    | {
+        title?: T;
+        firstName?: T;
+        lastName?: T;
+        company?: T;
+        addressLine1?: T;
+        addressLine2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
+        phone?: T;
+      };
+  finalizationLock?: T;
+  finalizationLockUntil?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2039,6 +2132,7 @@ export interface PayloadJobsSelect<T extends boolean = true> {
   queue?: T;
   waitUntil?: T;
   processing?: T;
+  concurrencyKey?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -2100,9 +2194,9 @@ export interface Header {
         megaMenu?: {
           label: string;
           /**
-           * Which top-level category this tab points to
+           * Storefront section this tab points to. Prepended to every category URL in the flyout.
            */
-          rootCategory: string | Category;
+          audience: 'men' | 'women';
           /**
            * Promo tiles (e.g. "New Arrivals", "Basic Tees")
            */
@@ -2110,6 +2204,9 @@ export interface Header {
             | {
                 title: string;
                 image: string | Media;
+                /**
+                 * Resolves to /{audience}/{categoryPath}
+                 */
                 link: string | Category;
                 id?: string | null;
               }[]
@@ -2184,7 +2281,7 @@ export interface HeaderSelect<T extends boolean = true> {
           | T
           | {
               label?: T;
-              rootCategory?: T;
+              audience?: T;
               featured?:
                 | T
                 | {
@@ -2239,6 +2336,18 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendOrderEmails".
+ */
+export interface TaskSendOrderEmails {
+  input: {
+    orderID: string;
+  };
+  output: {
+    completed: boolean;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

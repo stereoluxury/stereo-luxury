@@ -22,8 +22,9 @@ import { Pages } from '@/collections/Pages'
 import { Users } from '@/collections/Users'
 import { Footer } from '@/globals/Footer'
 import { Header } from '@/globals/Header'
-import { plugins } from './plugins'
+import { handlePaystackWebhook, plugins } from './plugins'
 import { Posts } from './collections/Post'
+import { sendOrderEmailsTask } from './jobs/sendOrderEmails'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -60,6 +61,7 @@ export default buildConfig({
   },
   collections: [Users, Pages, Posts, Categories, Media],
   db: mongooseAdapter({
+    allowIDOnCreate: true,
     url: process.env.DATABASE_URL || '',
   }),
   editor: lexicalEditor({
@@ -102,8 +104,24 @@ export default buildConfig({
     defaultFromName: 'Stereo Luxury',
     apiKey: process.env.RESEND_API_KEY || '',
   }),
-  endpoints: [],
+  endpoints: [
+    {
+      method: 'post',
+      path: '/paystack/webhooks',
+      handler: handlePaystackWebhook,
+    },
+  ],
   globals: [Header, Footer],
+  jobs: {
+    enableConcurrencyControl: true,
+    access: {
+      run: ({ req }) => {
+        const jobsToken = process.env.PAYLOAD_JOBS_TOKEN
+        return Boolean(jobsToken && req.headers.get('authorization') === `Bearer ${jobsToken}`)
+      },
+    },
+    tasks: [sendOrderEmailsTask],
+  },
   plugins,
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
