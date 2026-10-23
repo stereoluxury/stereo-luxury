@@ -39,7 +39,7 @@ export const Users: CollectionConfig = {
         return html
       },
       generateEmailSubject: () => {
-        return 'Reset Your Password - Fwatches'
+        return 'Reset Your Password - Stereo Luxury'
       },
     },
   },
