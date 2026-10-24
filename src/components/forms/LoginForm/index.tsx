@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/providers/Auth'
+import { useEcommerce } from '@payloadcms/plugin-ecommerce/client/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useCallback, useRef } from 'react'
+import React, { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 
 type FormData = {
@@ -20,13 +21,13 @@ type FormData = {
 export const LoginForm: React.FC = () => {
   const searchParams = useSearchParams()
   const allParams = searchParams.toString() ? `?${searchParams.toString()}` : ''
-  const redirect = useRef(searchParams.get('redirect'))
+    const router = useRouter()
   const { login } = useAuth()
-  const router = useRouter()
+  const { onLogin } = useEcommerce()
   const [error, setError] = React.useState<null | string>(null)
 
   const {
-    formState: { errors, isLoading },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
   } = useForm<FormData>()
@@ -35,13 +36,23 @@ export const LoginForm: React.FC = () => {
     async (data: FormData) => {
       try {
         await login(data)
-        if (redirect?.current) router.push(redirect.current)
-        else router.push('/account')
+        try {
+          await onLogin()
+        } catch (syncError) {
+          console.error('Unable to refresh customer ecommerce data after login.', syncError)
+        }
+
+        const requestedRedirect = searchParams.get('redirect')
+        const destination =
+          requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')
+            ? requestedRedirect
+            : '/account'
+        router.push(destination)
       } catch (_) {
         setError('There was an error with the credentials provided. Please try again.')
       }
     },
-    [login, router],
+    [login, onLogin, searchParams],
   )
 
   return (
@@ -84,12 +95,12 @@ export const LoginForm: React.FC = () => {
         </Button>
         <Button
           className="grow rounded-none"
-          disabled={isLoading}
+          disabled={isSubmitting}
           size="lg"
           type="submit"
           variant="default"
         >
-          {isLoading ? 'Processing' : 'Continue'}
+          {isSubmitting ? 'Signing in…' : 'Continue'}
         </Button>
       </div>
     </form>

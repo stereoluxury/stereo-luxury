@@ -8,6 +8,7 @@ import { checkRole } from '@/access/utilities'
 
 import { ensureFirstUserIsAdmin } from './hooks/ensureFirstUserIsAdmin'
 import { ForgotPasswordEmailHtml } from '@/components/Emails/ForgotPasswordEmail'
+import { getServerSideURL } from '@/utilities/getURL'
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -32,14 +33,32 @@ export const Users: CollectionConfig = {
         if (!args) {
           throw new Error('Invalid arguments')
         }
+        if (!args.token) {
+          throw new Error('Missing password reset token')
+        }
+        let resetURL: string
+        if (args.user.roles?.includes('admin')) {
+          const config = args.req?.payload.config
+          if (!config) throw new Error('Payload request context is required for admin reset URL')
+          resetURL = new URL(
+            `${config.routes.admin}${config.admin.routes.reset}/${encodeURIComponent(args.token)}`,
+            getServerSideURL(),
+          ).toString()
+        } else {
+          resetURL = new URL(
+            `/reset-password?token=${encodeURIComponent(args.token)}`,
+            getServerSideURL(),
+          ).toString()
+        }
+
         const html = await ForgotPasswordEmailHtml({
-          token: args.token as string,
           userEmail: args.user.email,
+          resetURL,
         })
         return html
       },
       generateEmailSubject: () => {
-        return 'Reset Your Password - Fwatches'
+        return 'Reset Your Password - Stereo Luxury'
       },
     },
   },
