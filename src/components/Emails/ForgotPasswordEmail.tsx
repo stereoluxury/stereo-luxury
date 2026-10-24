@@ -1,26 +1,24 @@
 import {
-    Body,
-    Button,
-    Container,
-    Head,
-    Hr,
-    Html,
-    Img,
-    Link,
-    Preview,
-    render,
-    Section,
-    Text,
+  Body,
+  Button,
+  Container,
+  Head,
+  Hr,
+  Html,
+  Img,
+  Link,
+  Preview,
+  render,
+  Section,
+  Text,
 } from 'react-email'
 
 interface ForgotPasswordEmailProps {
-  token: string
   userEmail: string
+  resetURL: string
 }
 
-export const ForgotPasswordEmail = ({ token, userEmail }: ForgotPasswordEmailProps) => {
-  const resetUrl = `${process.env.NEXT_PUBLIC_SERVER_URL}/reset-password?token=${token}`
-
+export const ForgotPasswordEmail = ({ resetURL, userEmail }: ForgotPasswordEmailProps) => {
   return (
     <Html>
       <Head />
@@ -48,14 +46,14 @@ export const ForgotPasswordEmail = ({ token, userEmail }: ForgotPasswordEmailPro
             <Text style={paragraph}>Click the button below to reset your password:</Text>
 
             <Section style={buttonSection}>
-              <Button style={button} href={resetUrl}>
+              <Button style={button} href={resetURL}>
                 Reset Password
               </Button>
             </Section>
 
             <Text style={paragraph}>Or copy and paste this link into your browser:</Text>
-            <Link href={resetUrl} style={link}>
-              {resetUrl}
+            <Link href={resetURL} style={link}>
+              {resetURL}
             </Link>
 
             <Hr style={divider} />

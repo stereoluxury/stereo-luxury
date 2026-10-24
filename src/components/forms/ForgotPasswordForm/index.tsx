@@ -6,7 +6,6 @@ import { Message } from '@/components/Message'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import Link from 'next/link'
 import React, { Fragment, useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
@@ -50,12 +49,13 @@ export const ForgotPasswordForm: React.FC = () => {
     <Fragment>
       {!success && (
         <React.Fragment>
-          <h1 className="text-xl md:text-3xl mb-4 text-primary-foreground font-anton">Forgot Password</h1>
+          <h1 className="text-xl md:text-3xl mb-4 text-primary-foreground font-anton">
+            Forgot Password
+          </h1>
           <div className="prose dark:prose-invert mb-8">
             <p>
-              {`Please enter your email below. You will receive an email message with instructions on
-              how to reset your password. To manage your all users, `}
-              <Link href="/admin/collections/users">login to the admin dashboard</Link>.
+              Enter the email address associated with your account. If it is registered, we will
+              send you a link to reset your password.
             </p>
           </div>
           <form className="max-w-lg tracking-widest" onSubmit={handleSubmit(onSubmit)}>
