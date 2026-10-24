@@ -18,27 +18,33 @@ export const ForgotPasswordForm: React.FC = () => {
   const [success, setSuccess] = useState(false)
 
   const {
-    formState: { errors },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
   } = useForm<FormData>()
 
   const onSubmit = useCallback(async (data: FormData) => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/forgot-password`,
-      {
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
+    setError('')
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/users/forgot-password`,
+        {
+          body: JSON.stringify(data),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
         },
-        method: 'POST',
-      },
-    )
+      )
 
-    if (response.ok) {
-      setSuccess(true)
-      setError('')
-    } else {
+      if (response.ok) {
+        setSuccess(true)
+      } else {
+        setError(
+          'There was a problem while attempting to send you a password reset email. Please try again.',
+        )
+      }
+    } catch {
       setError(
         'There was a problem while attempting to send you a password reset email. Please try again.',
       )
@@ -73,8 +79,13 @@ export const ForgotPasswordForm: React.FC = () => {
               {errors.email && <FormError message={errors.email.message} />}
             </FormItem>
 
-            <Button type="submit" variant="default" className="rounded-none">
-              Forgot Password
+            <Button
+              type="submit"
+              variant="default"
+              className="rounded-none"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Sending…' : 'Send reset link'}
             </Button>
           </form>
         </React.Fragment>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/providers/Auth'
+import { useEcommerce } from '@payloadcms/plugin-ecommerce/client/react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback, useRef, useState } from 'react'
@@ -21,13 +22,13 @@ type FormData = {
 export const CreateAccountForm: React.FC = () => {
   const searchParams = useSearchParams()
   const allParams = searchParams.toString() ? `?${searchParams.toString()}` : ''
-  const { login } = useAuth()
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const { login } = useAuth()
+  const { onLogin } = useEcommerce()
   const [error, setError] = useState<null | string>(null)
 
   const {
-    formState: { errors },
+    formState: { errors, isSubmitting },
     handleSubmit,
     register,
     watch,
@@ -38,37 +39,43 @@ export const CreateAccountForm: React.FC = () => {
 
   const onSubmit = useCallback(
     async (data: FormData) => {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/users`, {
-        body: JSON.stringify(data),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-      })
-
-      if (!response.ok) {
-        const message = response.statusText || 'There was an error creating the account.'
-        setError(message)
-        return
-      }
-
-      const redirect = searchParams.get('redirect')
-
-      const timer = setTimeout(() => {
-        setLoading(true)
-      }, 1000)
-
+      setError(null)
       try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/users`, {
+          body: JSON.stringify(data),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+        })
+
+        if (!response.ok) {
+          setError(response.statusText || 'There was an error creating the account.')
+          return
+        }
+
         await login(data)
-        clearTimeout(timer)
-        if (redirect) router.push(redirect)
-        else router.push(`/account?success=${encodeURIComponent('Account created successfully')}`)
+        try {
+          await onLogin()
+        } catch (syncError) {
+          console.error(
+            'Unable to refresh customer ecommerce data after account creation.',
+            syncError,
+          )
+        }
+
+        const requestedRedirect = searchParams.get('redirect')
+        const destination =
+          requestedRedirect?.startsWith('/') && !requestedRedirect.startsWith('//')
+            ? requestedRedirect
+            : `/account?success=${encodeURIComponent('Account created successfully')}`
+        // window.location.assign(destination)
+        router.push(destination)
       } catch (_) {
-        clearTimeout(timer)
         setError('There was an error with the credentials provided. Please try again.')
       }
     },
-    [login, router, searchParams],
+    [login, onLogin, searchParams],
   )
 
   return (
@@ -119,8 +126,8 @@ export const CreateAccountForm: React.FC = () => {
           {errors.passwordConfirm && <FormError message={errors.passwordConfirm.message} />}
         </FormItem>
       </div>
-      <Button className="rounded-none" disabled={loading} type="submit" variant="default">
-        {loading ? 'Processing' : 'Create Account'}
+      <Button className="rounded-none" disabled={isSubmitting} type="submit" variant="default">
+        {isSubmitting ? 'Creating account…' : 'Create Account'}
       </Button>
 
       <div className="prose dark:prose-invert mt-8">
