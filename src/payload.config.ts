@@ -59,6 +59,7 @@ export default buildConfig({
     },
     user: Users.slug,
   },
+  serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
   cors: [process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'],
   csrf: [process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'],
   collections: [Users, Pages, Posts, Categories, Media],
